@@ -19,6 +19,8 @@ contract yfUSDT is ERC20, Ownable {
   IERC20 public token;
   mapping (address => uint256) private earnBalances;
   mapping (address => uint256) private vaultBalances;
+  mapping (address => uint256) private earnDepositAmount;
+  mapping (address => uint256) private vaultDepositAmount;
   uint256 public earnPool;
   uint256 public vaultPool;
   uint public earnPrice;
@@ -26,6 +28,8 @@ contract yfUSDT is ERC20, Ownable {
   bool public isVesting = false;
   uint public feePercentages = 20;
   uint public unlockDate = 0;
+  uint256 private _earnTotalSupply;
+  uint256 private _vaultTotalSupply;
 
   IYearn public earn;
   IYvault public vault;
@@ -71,6 +75,14 @@ contract yfUSDT is ERC20, Ownable {
     return vaultBalances[_address];
   }
 
+  function earnDepositBalanceOf(address _address) public view returns (uint256) {
+    return earnDepositAmount[_address];
+  }
+
+  function vaultDepositBalanceOf(address _address) public view returns (uint256) {
+    return vaultDepositAmount[_address];
+  }
+
   function deposit(uint earnAmount, uint vaultAmount) public {
     require(isVesting == false, "Unable to deposit funds. The funds are vested. ");
     require(earnAmount > 0 || vaultAmount > 0, "Deposit Amount must be greater than 0");
@@ -97,9 +109,15 @@ contract yfUSDT is ERC20, Ownable {
       } else {
         earnBalances[msg.sender] = earnBalances[msg.sender].add(earnShares);
       } 
+      earn.deposit(earnAmount); // Deposit first to ensure success transaction before adding own accounting tokens
       shares = shares.add(earnShares);
       earnPool = earnPool.add(earnShares);
-      earn.deposit(earnAmount);
+      
+      if (earnDepositAmount[msg.sender] == 0) {
+        earnDepositAmount[msg.sender] = earnAmount;
+      } else {
+        earnDepositAmount[msg.sender] = earnDepositAmount[msg.sender].add(earnAmount);
+      }
     }
 
     if (vaultAmount > 0) {
@@ -117,9 +135,15 @@ contract yfUSDT is ERC20, Ownable {
       } else {
         vaultBalances[msg.sender] = vaultBalances[msg.sender].add(vaultShares);
       }
+      vault.deposit(vaultAmount); // Deposit first to ensure success transaction before adding own accounting tokens
       shares = shares.add(vaultShares);
       vaultPool = vaultPool.add(vaultShares);
-      vault.deposit(vaultAmount);
+
+      if (vaultDepositAmount[msg.sender] == 0) {
+        vaultDepositAmount[msg.sender] = vaultAmount;
+      } else {
+        vaultDepositAmount[msg.sender] = vaultDepositAmount[msg.sender].add(vaultAmount);
+      }
     }
 
     _mint(msg.sender, shares);
@@ -130,14 +154,23 @@ contract yfUSDT is ERC20, Ownable {
     require(_shares > 0, "Amount must be greater than 0");
     require(earnBalanceOf(msg.sender) >= _shares, "Insufficient Balances");
 
-    uint256 r = (earn.calcPoolValueInToken().mul(_shares)).div(earn.totalSupply()); // Convert into USDT
+    uint256 d = _shares.mul(earnDepositAmount[msg.sender]).div(earnBalances[msg.sender]); // Initial Deposit Amount
+    uint256 r = (earn.calcPoolValueInToken().mul(_shares)).div(earn.totalSupply()); // Convert profit into USDT
 
     earn.withdraw(_shares);
     earnPool = earnPool.sub(_shares);
     earnBalances[msg.sender] = earnBalances[msg.sender].sub(_shares, "redeem amount exceeds balance");
     _burn(msg.sender, _shares);
 
-    token.safeTransfer(msg.sender, (r.mul(feePercentages)).div(100));
+    if (r > d) {
+      uint256 p = r.sub(d); // Profit
+      uint256 fees = p.mul(feePercentages).div(100);
+      token.safeTransfer(msg.sender, r.sub(fees)); // Take Fees Percentages from Profit
+    } else {
+      token.safeTransfer(msg.sender, r);
+    }
+    
+    earnDepositAmount[msg.sender] = earnDepositAmount[msg.sender].sub(_shares, "redeem amount exceeds balance");
   }
 
   function withdrawVault(uint _shares) public {
@@ -145,14 +178,23 @@ contract yfUSDT is ERC20, Ownable {
     require(_shares > 0, "Amount must be greater than 0");
     require(vaultBalanceOf(msg.sender) >= _shares, "Insufficient Balances");
 
-    uint256 r = (vault.balance().mul(_shares)).div(vault.totalSupply());
+    uint256 d = _shares.mul(vaultDepositAmount[msg.sender]).div(vaultBalances[msg.sender]); // Initial Deposit Amount
+    uint256 r = (vault.balance().mul(_shares)).div(vault.totalSupply()); // Convert profit into USDT
 
     vault.withdraw(_shares);
     vaultPool = vaultPool.sub(_shares);
     vaultBalances[msg.sender] = vaultBalances[msg.sender].sub(_shares, "redeem amount exceeds balance");
     _burn(msg.sender, _shares);
 
-    token.safeTransfer(msg.sender, (r.mul(feePercentages)).div(100));
+    if (r > d) {
+      uint256 p = r.sub(d); // Profit
+      uint256 fees = p.mul(feePercentages).div(100);
+      token.safeTransfer(msg.sender, r.sub(fees)); // Take Fees Percentages from Profit
+    } else {
+      token.safeTransfer(msg.sender, r);
+    }
+    
+    vaultDepositAmount[msg.sender] = vaultDepositAmount[msg.sender].sub(_shares, "redeem amount exceeds balance");
   }
 
   function withdrawToken() public onlyOwner {
@@ -163,11 +205,13 @@ contract yfUSDT is ERC20, Ownable {
     require(isVesting == false, "The funds are collected.");
 
     isVesting = true;
-    earnPrice = (earn.calcPoolValueInToken().mul(earnPool)).div(earn.totalSupply());
+    _earnTotalSupply = earn.totalSupply();
+    earnPrice = (earn.calcPoolValueInToken().mul(earnPool)).div(_earnTotalSupply);
     earn.withdraw(earnPool);
     earnPool = uint256(0);
 
-    vaultPrice = (vault.balance().mul(vaultPool)).div(vault.totalSupply());
+    _vaultTotalSupply = vault.totalSupply();
+    vaultPrice = (vault.balance().mul(vaultPool)).div(_vaultTotalSupply);
     vault.withdraw(vaultPool);
     vaultPool = uint256(0);
   }
@@ -180,6 +224,8 @@ contract yfUSDT is ERC20, Ownable {
     earnPrice = uint(0);
     vaultPrice = uint(0);
     unlockDate = uint(0);
+    _earnTotalSupply = uint(0);
+    _vaultTotalSupply = uint(0);
   }
 
   function refundEarn() public {
@@ -187,8 +233,18 @@ contract yfUSDT is ERC20, Ownable {
 
     uint shares = earnBalances[msg.sender];
     earnBalances[msg.sender] = uint(0);
-    token.safeTransfer(msg.sender, ((shares.div(totalSupply()).mul(earnPrice)).mul(feePercentages)).div(100));
+    uint256 r = shares.div(_earnTotalSupply).mul(earnPrice);
+    uint256 d = earnDepositAmount[msg.sender];
+
+    if (r > d) {
+      uint256 p = r.sub(d);
+      uint256 fees = p.mul(feePercentages).div(100);
+      token.safeTransfer(msg.sender, r.sub(fees)); // Take Fees Percentages from Profit
+    } else {
+      token.safeTransfer(msg.sender, r);
+    }
     _burn(msg.sender, shares);
+    earnDepositAmount[msg.sender] = uint(0);
   }
 
   function refundVault() public {
@@ -196,7 +252,18 @@ contract yfUSDT is ERC20, Ownable {
 
     uint shares = vaultBalances[msg.sender];
     vaultBalances[msg.sender] = uint(0);
-    token.safeTransfer(msg.sender, ((shares.div(totalSupply()).mul(vaultPrice)).mul(feePercentages)).div(100));
+    uint256 r = shares.div(_vaultTotalSupply).mul(vaultPrice);
+    uint256 d = vaultDepositAmount[msg.sender];
+
+    if (r > d) {
+      uint256 p = r.sub(d);
+      uint256 fees = p.mul(feePercentages).div(100);
+      token.safeTransfer(msg.sender, r.sub(fees)); // Take Fees Percentages from Profit
+    } else {
+      token.safeTransfer(msg.sender, r);
+    }
+    
     _burn(msg.sender, shares);
+    vaultDepositAmount[msg.sender] = uint(0);
   }
 }
