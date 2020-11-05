@@ -2,7 +2,7 @@
 
 DaoVentures Protocol is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault.
 
-## Requirements
+## Installations
 
 To run this project you need:
 
@@ -22,7 +22,7 @@ $ truffle migrate --network rinkeby
 
 ### Steps for invest into this contract
 
-1. Invoke `approve` function in `TetherToken` smart contract with user address.
+1. Invoke `approve` function with 999999999999 amount in `TetherToken` smart contract with user address.
 2. Invoke `deposit` function in `yfUSDT` smart contract with investment amount.
 
 For withdrawal purpose, you may either invoke `withdrawEarn` to withdraw from yEarn or `withdrawVault` to withdraw from yVault.
