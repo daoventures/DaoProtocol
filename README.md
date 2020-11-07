@@ -50,9 +50,9 @@ For withdrawal purpose, you may either invoke `withdrawEarn` to withdraw from yE
     - Only allow to revert after 24 hours of vesting
     
 ### Public Functions
-1. earnBalanceOf - Check your Earn balance
+1. `earnBalanceOf` - Check your Earn balance
 
-2. vaultBalanceOf - Check your Vault balance
+2. `vaultBalanceOf` - Check your Vault balance
 
 3. earnDepositBalanceOf - Check your current investment amount of Earn smart contract
 
