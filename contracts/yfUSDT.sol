@@ -27,7 +27,7 @@ contract yfUSDT is ERC20, Ownable {
   uint public vaultPrice;
   bool public isVesting = false;
   uint public feePercentages = 20;
-  uint public unlockDate = 0;
+  uint256 public unlockDate;
   uint256 private _earnTotalSupply;
   uint256 private _vaultTotalSupply;
 
@@ -214,11 +214,14 @@ contract yfUSDT is ERC20, Ownable {
     vaultPrice = (vault.balance().mul(vaultPool)).div(_vaultTotalSupply);
     vault.withdraw(vaultPool);
     vaultPool = uint256(0);
+
+    unlockDate = now.add(1 days); // Set Current Block Timestamp
   }
 
   function revertContract() public onlyOwner {
     require(isVesting == true, "It only can be reverted when the funds are vested.");
     require(totalSupply() == 0, "It only can be reverted when zero total supply.");
+    require(now >= unlockDate, "Revert contract only can be made after 24 hours of vesting.");
 
     isVesting = false;
     earnPrice = uint(0);
