@@ -30,21 +30,21 @@ For withdrawal purpose, you may either invoke `withdrawEarn` to withdraw from yE
 ## Contract Functionalities
 
 ### Admin Functions
-1. setFeePercentages - Set the fees percentages of the profit commission
+1. `setFeePercentages` - Set the fees percentages of the profit commission
 
-2. setEarn - Change Earn smart contract
+2. `setEarn` - Change Earn smart contract
 
-3. setVault - Change Vault smart contract
+3. `setVault` - Change Vault smart contract
 
-4. approvePooling - Approve Earn and Vault smart contract from Tether token
+4. `approvePooling` - Approve Earn and Vault smart contract from Tether token
 
-5. vesting 
+5. `vesting` 
    - Change to state of vesting 
    - collect all the funds from Earn and Vault smart contracts for emergency uses
    - Disabled the deposit and withdraw functions for public
    - Only allowed users to do refund from yfUSDT
    
-6. revertContract 
+6. `revertContract` 
     - Revert state of vesting 
     - Allow smart contract work as usual
     - Only allow to revert after 24 hours of vesting
@@ -54,16 +54,16 @@ For withdrawal purpose, you may either invoke `withdrawEarn` to withdraw from yE
 
 2. `vaultBalanceOf` - Check your Vault balance
 
-3. earnDepositBalanceOf - Check your current investment amount of Earn smart contract
+3. `earnDepositBalanceOf` - Check your current investment amount of Earn smart contract
 
-4. vaultDepositBalanceOf - Check your current investment amount of Vault smart contract
+4. `vaultDepositBalanceOf` - Check your current investment amount of Vault smart contract
 
-5. deposit - Deposit funds into Earn and Vault smart contracts
+5. `deposit` - Deposit funds into Earn and Vault smart contracts
 
-6. withdrawEarn - Withdraw funds from Earn smart contract
+6. `withdrawEarn` - Withdraw funds from Earn smart contract
 
-7. withdrawVault - Withdraw funds from Vault smart contract
+7. `withdrawVault` - Withdraw funds from Vault smart contract
 
-8. refundEarn - Refund all of your Earn funds after yfUSDT is vested
+8. `refundEarn` - Refund all of your Earn funds after yfUSDT is vested
 
-9. refundVault - Refund all of your Vault funds after yfUSDT is vested
+9. `refundVault` - Refund all of your Vault funds after yfUSDT is vested
