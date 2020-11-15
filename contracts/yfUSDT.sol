@@ -37,6 +37,7 @@ contract yfUSDT is ERC20, Ownable {
 
   constructor(address _token, address _earn, address _vault) public 
     ERC20("DAO Tether USDT", "daoUSDT") {
+      _setupDecimals(6);
       token = IERC20(_token);
       earn = IYearn(address(_earn));
       vault = IYvault(address(_vault));
