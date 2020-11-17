@@ -1,6 +1,6 @@
 # DaoVentures Protocol
 
-DaoVentures Protocol is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault.
+DaoVentures Protocol is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault (USDT).
 
 (deprecated) Mainnet Etherscan: https://etherscan.io/address/0xE8c9F440677bDC8bA915734e6c7C1b232916877d
 
