@@ -198,10 +198,6 @@ contract yfUSDT is ERC20, Ownable {
     vaultDepositAmount[msg.sender] = vaultDepositAmount[msg.sender].sub(_shares, "redeem amount exceeds balance");
   }
 
-  function withdrawToken() public onlyOwner {
-    unlockDate = now + 1 minutes;
-  }
-
   function vesting() public onlyOwner {
     require(isVesting == false, "The funds are collected.");
 
@@ -221,15 +217,12 @@ contract yfUSDT is ERC20, Ownable {
 
   function revertContract() public onlyOwner {
     require(isVesting == true, "It only can be reverted when the funds are vested.");
-    require(totalSupply() == 0, "It only can be reverted when zero total supply.");
     require(now >= unlockDate, "Revert contract only can be made after 24 hours of vesting.");
 
     isVesting = false;
     earnPrice = uint(0);
     vaultPrice = uint(0);
     unlockDate = uint(0);
-    _earnTotalSupply = uint(0);
-    _vaultTotalSupply = uint(0);
   }
 
   function refundEarn() public {
