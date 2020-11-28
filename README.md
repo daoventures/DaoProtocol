@@ -1,4 +1,4 @@
-# DaoVentures Protocol
+# Yearn Farmer
 
 DaoVentures Protocol is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault (USDT).
 
