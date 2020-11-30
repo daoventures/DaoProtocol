@@ -1,18 +1,45 @@
-# Yearn Farmer
+# DaoVentures Protocol
 
 DaoVentures Protocol is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault (USDT).
 
-Mainnet Etherscan: https://etherscan.io/address/0xA0db955B5bdFA7C279CdE6C136FBA20C195CdEe5
+(deprecated) Mainnet Etherscan: https://etherscan.io/address/0xE8c9F440677bDC8bA915734e6c7C1b232916877d
 
 ## Installations
 
-To run this project you need:
+To run this project locally you need to deploy USDT, yEarn, yVault and this repo, Yearn-Farmer. 
 
-1. npm install -g truffle
-2. npm install
-3. Change the parameters of the smart contract addresses on the `migrations` file.
-4. truffle compile
-5. truffle migrate
+1. `npm install` -g truffle`
+2. `npm install`
+3. Run a local Ganache Project. Take note of the Server Port and Network ID, as they will be needed for all deployments. 
+4. Deploy USDT locally:
+    1. cd into the project
+    2. `npm install`
+    3. In the ``truffle-config.js``:
+        1. Uncomment only the development object and replace values with your own from Ganache
+    4. `truffle compile`
+    5. `truffle migrate --network development`
+    6. For the contract migration “TetherToken”, save the value for the key “contract address” as we need that for later
+5. Deploy yEarn locally: 
+    1. `npm install`
+    2. In the `truffle-config.js`:
+        1. Uncomment only the development object and replace values with your own from Ganache
+    3. Open the file /contracts/yEarn.sol and replace the address on line:389 with the USDT contract address you saved in an earlier step
+    4. `truffle compile`
+    5. `truffle migrate --network development`
+    6. For the contract migration “yUSDT”, save the value for the key “contract address” as we need that for later
+6. Deploy yVault locally: 
+    1. `npm install`
+    2. In the `truffle-config.js`:
+        1. Uncomment only the development object and replace values with your own from Ganache
+    1. Open the file /migrations/1_initial_migration.js and replace the 1st address on line:12 with the USDT contract address you saved in an earlier step. Ignore the 2nd address
+    2. `truffle compile`
+    3. `truffle migrate --network development`
+    4. For the contract migration “yVault”, save the value for the key “contract address” as we need that for later
+7. Change the parameters of the smart contract addresses on the migrations file.
+9. `truffle compile`
+10. `truffle migrate --network development`
+
+
 
 ### Deploy to Testnet
 
@@ -28,6 +55,8 @@ $ truffle migrate --network rinkeby
 2. Invoke `deposit` function in `yfUSDT` smart contract with investment amount.
 
 For withdrawal purpose, you may either invoke `withdrawEarn` to withdraw from yEarn or `withdrawVault` to withdraw from yVault.
+
+![Flowchart](images/Flowchart_YearnFarmer.png?raw=true)
 
 ## Contract Functionalities
 
