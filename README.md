@@ -56,7 +56,7 @@ $ truffle migrate --network rinkeby
 
 For withdrawal purpose, you may either invoke `withdrawEarn` to withdraw from yEarn or `withdrawVault` to withdraw from yVault.
 
-[Flowchart!](images/Flowchart_YearnFarmer.png)
+![Flowchart](images/Flowchart_YearnFarmer.png?raw=true)
 
 ## Contract Functionalities
 
