@@ -1,19 +1,24 @@
 {
-  "name": "dao-protocol",
+  "name": "playground",
   "version": "1.0.0",
-  "description": "DAOventures smart contracts",
-  "main": "truffle-config.js",
-  "directories": {
-    "test": "test"
-  },
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "DAOVentures",
-  "license": "MIT",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.2.1",
+    "ethers": "^5.0.26",
+    "hardhat": "^2.0.8"
+  },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.2.0",
-    "@truffle/hdwallet-provider": "^1.1.1",
+    "@openzeppelin/contracts": "^3.3.0",
     "dotenv": "^8.2.0"
   }
 }
