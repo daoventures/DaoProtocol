@@ -1,27 +1,20 @@
 require("@nomiclabs/hardhat-waffle")
 require("dotenv").config()
 
-// task("accounts", "Prints the list of accounts", async () => {
-  // const accounts = await ethers.getSigners();
-  // for (const account of accounts) {
-  //   console.log(account.address);
-  // }
-// });
-
 module.exports = {
   networks: {
     hardhat: {
       accounts: {
-        mnemonic: "raven forget quick pyramid busy bronze oven veteran gas yard clown ill"
+        mnemonic: process.env.MNEMONIC
       },
       forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        url: process.env.PUBLIC_NODE_URL,
         blockNumber: 11686462,
       }
     }
   },
   solidity: {
-    version: "0.6.2",
+    version: "0.7.4",
     settings: {
       optimizer: {
         enabled: true,
