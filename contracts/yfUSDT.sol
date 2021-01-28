@@ -54,6 +54,13 @@ contract yfUSDT is ERC20, Ownable {
   IYvault public vault;
   uint256 public constant MAX_UNIT = 2**256 - 2;
 
+  event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
+  event SetDepositFeeTier2(uint256[] indexed oldDepositFeeTier2, uint256[] indexed newDepositFeeTier2);
+  event SetDepositFeePercentage(uint256[] indexed oldDepositFeePercentage, uint256[] indexed newDepositFeePercentage);
+  event SetProfileSharingFeePercentage(uint oldProfileSharingFeePercentage, uint newProfileSharingFeePercentage);
+  event SetEarn(address oldEarnAddress, address newEarnAddress);
+  event SetVault(address oldVaultAddress, address newVaultAddress);
+
   constructor(address _token, address _earn, address _vault, address _treasuryWallet) 
     ERC20("DAO Tether USDT", "daoUSDT") { /// ********** This need to be change and create new .sol file for DAI, USDC and TUSD **********
       _setupDecimals(6); /// ********** This need to be change to 18 for yfDAI.sol and yfTUSD.sol **********
@@ -73,6 +80,7 @@ contract yfUSDT is ERC20, Ownable {
    * - Only contract owner can call this function
    */
   function setTreasuryWallet(address _treasuryWallet) external onlyOwner {
+    emit SetTreasuryWallet(treasuryWallet, _treasuryWallet);
     treasuryWallet = _treasuryWallet;
   }
 
@@ -94,6 +102,7 @@ contract yfUSDT is ERC20, Ownable {
      * Tier 2: minimun amount of tier 2 <= deposit amount <= maximun amount of tier 2
      * Tier 3: amount > maximun amount of tier 2
      */
+    emit SetDepositFeeTier2(depositFeeTier2, _depositFeeTier2);
     depositFeeTier2 = _depositFeeTier2;
   }
 
@@ -115,6 +124,7 @@ contract yfUSDT is ERC20, Ownable {
       _depositFeePercentage[1] < 400 ||
       _depositFeePercentage[2] < 400, "Deposit fee percentage cannot be more than 40%"
     );
+    emit SetDepositFeePercentage(depositFeePercentage, _depositFeePercentage);
     depositFeePercentage = _depositFeePercentage;
   }
 
@@ -127,6 +137,7 @@ contract yfUSDT is ERC20, Ownable {
    */
   function setProfileSharingFeePercentage(uint256 _percentage) public onlyOwner {
     require(_percentage < 40, "Profile sharing fee percentage cannot be more than 40%");
+    emit SetProfileSharingFeePercentage(profileSharingFeePercentage, _percentage);
     profileSharingFeePercentage = _percentage;
   }
 
@@ -137,6 +148,7 @@ contract yfUSDT is ERC20, Ownable {
    * - Only contract owner can call this function
    */
   function setEarn(address _contract) public onlyOwner {
+    emit SetEarn(address(earn), _contract);
     earn = IYearn(address(_contract));
   }
 
@@ -147,6 +159,7 @@ contract yfUSDT is ERC20, Ownable {
    * - Only contract owner can call this function
    */
   function setVault(address _contract) public onlyOwner {
+    emit SetVault(address(vault), _contract);
     vault = IYvault(address(_contract));
   }
 
@@ -219,7 +232,6 @@ contract yfUSDT is ERC20, Ownable {
     require(earnAmount > 0 || vaultAmount > 0, "Deposit Amount must be greater than 0");
     
     uint256 depositAmount = earnAmount.add(vaultAmount);
-
     token.safeTransferFrom(msg.sender, address(this), depositAmount);
 
     /**
