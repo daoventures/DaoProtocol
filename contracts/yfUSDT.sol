@@ -57,9 +57,9 @@ contract yfUSDT is ERC20, Ownable {
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
   event SetDepositFeeTier2(uint256[] indexed oldDepositFeeTier2, uint256[] indexed newDepositFeeTier2);
   event SetDepositFeePercentage(uint256[] indexed oldDepositFeePercentage, uint256[] indexed newDepositFeePercentage);
-  event SetProfileSharingFeePercentage(uint oldProfileSharingFeePercentage, uint newProfileSharingFeePercentage);
-  event SetEarn(address oldEarnAddress, address newEarnAddress);
-  event SetVault(address oldVaultAddress, address newVaultAddress);
+  event SetProfileSharingFeePercentage(uint indexed oldProfileSharingFeePercentage, uint indexed newProfileSharingFeePercentage);
+  event SetEarn(address indexed oldEarnAddress, address indexed newEarnAddress);
+  event SetVault(address indexed oldVaultAddress, address indexed newVaultAddress);
 
   constructor(address _token, address _earn, address _vault, address _treasuryWallet) 
     ERC20("DAO Tether USDT", "daoUSDT") { /// ********** This need to be change and create new .sol file for DAI, USDC and TUSD **********
