@@ -36,8 +36,8 @@ contract yfUSDT is ERC20, Ownable {
   mapping (address => uint256) private vaultDepositAmount;
   uint256 public earnPool;
   uint256 public vaultPool;
-  uint256 public earnPrice;
-  uint256 public vaultPrice;
+  uint256 public earnPrice; /// For vesting usage only
+  uint256 public vaultPrice; /// For vesting usage only
 
   uint256[] public depositFeeTier2 = [10001, 100000]; /// Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
   uint256[] public depositFeePercentage = [100, 50, 25]; /// Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.5%, 0.25%]
@@ -55,8 +55,8 @@ contract yfUSDT is ERC20, Ownable {
   uint256 public constant MAX_UNIT = 2**256 - 2;
 
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
-  event SetDepositFeeTier2(uint256[] indexed oldDepositFeeTier2, uint256[] indexed newDepositFeeTier2);
-  event SetDepositFeePercentage(uint256[] indexed oldDepositFeePercentage, uint256[] indexed newDepositFeePercentage);
+  event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
+  event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
   event SetProfileSharingFeePercentage(uint indexed oldProfileSharingFeePercentage, uint indexed newProfileSharingFeePercentage);
   event SetEarn(address indexed oldEarnAddress, address indexed newEarnAddress);
   event SetVault(address indexed oldVaultAddress, address indexed newVaultAddress);
@@ -93,11 +93,11 @@ contract yfUSDT is ERC20, Ownable {
    * - First element in array must greater than 0
    * - Second element must greater than first element
    */
-  function setDepositFeeTier(uint256[] calldata _depositFeeTier2) external onlyOwner {
-    require(_depositFeeTier2[0] != 0, "First amount(minimun) cannot be 0");
-    require(_depositFeeTier2[1] > _depositFeeTier2[0], "Second amount(maximun) must be greater than first amount(minimun)");
+  function setDepositFeeTier2(uint256[] calldata _depositFeeTier2) external onlyOwner {
+    require(_depositFeeTier2[0] != 0, "Minimun amount cannot be 0");
+    require(_depositFeeTier2[1] > _depositFeeTier2[0], "Maximun amount must greater than minimun amount");
     /**
-     * Deposit fees have three tier, but it is enough to have minimun and maximun amount of tier 2
+     * Deposit fees have three tier, but it is sufficient to have minimun and maximun amount of tier 2
      * Tier 1: deposit amount < minimun amount of tier 2
      * Tier 2: minimun amount of tier 2 <= deposit amount <= maximun amount of tier 2
      * Tier 3: amount > maximun amount of tier 2
@@ -120,9 +120,9 @@ contract yfUSDT is ERC20, Ownable {
      * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.5% and Tier 3 = 0.25%
      */
     require(
-      _depositFeePercentage[0] < 400 ||
-      _depositFeePercentage[1] < 400 ||
-      _depositFeePercentage[2] < 400, "Deposit fee percentage cannot be more than 40%"
+      _depositFeePercentage[0] < 4000 &&
+      _depositFeePercentage[1] < 4000 &&
+      _depositFeePercentage[2] < 4000, "Deposit fee percentage cannot be more than 40%"
     );
     emit SetDepositFeePercentage(depositFeePercentage, _depositFeePercentage);
     depositFeePercentage = _depositFeePercentage;
