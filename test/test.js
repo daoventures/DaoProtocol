@@ -54,342 +54,431 @@ describe("yfUSDT", () => {
         const [senderSigner, _] = await ethers.getSigners()
         const senderSignerAddress = await senderSigner.getAddress()
         const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
-        await tokenContract.connect(unlockedSigner).transfer(senderSignerAddress, 10000000)
-        // Check if sender have 10000000 USDT
-        expect(await tokenContract.balanceOf(senderSignerAddress)).to.equal(10000000)
+        await tokenContract.connect(unlockedSigner).transfer(senderSignerAddress, 500000000000000)
+        // Check if sender have 500000000000000 USDT
+        expect(await tokenContract.balanceOf(senderSignerAddress)).to.equal(500000000000000)
     })
 
-    it("should deploy contract correctly", async () => {
-        // Get sender address and deploy the contract
-        const [senderSigner, _] = await ethers.getSigners()
-        const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
-        const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        await yfUSDTContract.deployed()
-        // Check if contract owner is contract deployer
-        expect(await yfUSDTContract.owner()).to.equal(await senderSigner.getAddress())
-        // Check if token accept is USDT
-        expect(await yfUSDTContract.token()).to.equal(tokenAddress)
-        // Check if no initial amount set in earn pool, vault pool, earn price and vault price
-        expect(await yfUSDTContract.earnPool()).to.equal(0)
-        expect(await yfUSDTContract.vaultPool()).to.equal(0)
-        expect(await yfUSDTContract.earnPrice()).to.equal(0)
-        expect(await yfUSDTContract.vaultPrice()).to.equal(0)
-        // Check if initial tier2 of deposit fee is 10001 <= tokenAmount <= 100000 (More details in contract)
-        expect(await yfUSDTContract.depositFeeTier2(0)).to.equal(10001)
-        expect(await yfUSDTContract.depositFeeTier2(1)).to.equal(100000)
-        // Check if initial deposit fee percentage is 1% for tier1, 0.5% for tier2, and 0.25% for tier3 (More details in contract)
-        expect(await yfUSDTContract.depositFeePercentage(0)).to.equal(100) // 1% = 100/10000, more detail in contract
-        expect(await yfUSDTContract.depositFeePercentage(1)).to.equal(50) // 1% = 50/10000, more detail in contract
-        expect(await yfUSDTContract.depositFeePercentage(2)).to.equal(25) // 1% = 25/10000, more detail in contract
-        // Check if initial profile sharing fee percentage is 10%
-        expect(await yfUSDTContract.profileSharingFeePercentage()).to.equal(10)
-        // Check if contract is not vesting
-        expect(await yfUSDTContract.isVesting()).is.false
-        // Check if treasury wallet address match given address
-        expect(await yfUSDTContract.treasuryWallet()).to.equal(treasuryWalletAddress)
-        // Check if Yearn USDT Earn contract and Yearn USDT Vault contract match given contract
-        expect(await yfUSDTContract.earn()).to.equal(yEarnAddress)
-        expect(await yfUSDTContract.vault()).to.equal(yVaultAddress)
-        // Check daoUSDT token is set properly
-        expect(await yfUSDTContract.name()).to.equal("DAO Tether USDT")
-        expect(await yfUSDTContract.symbol()).to.equal("daoUSDT")
-        expect(await yfUSDTContract.decimals()).to.equal(6)
+    // it("should deploy contract correctly", async () => {
+    //     // Get sender address and deploy the contract
+    //     const [senderSigner, _] = await ethers.getSigners()
+    //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+    //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+    //     await yfUSDTContract.deployed()
+    //     // Check if contract owner is contract deployer
+    //     expect(await yfUSDTContract.owner()).to.equal(await senderSigner.getAddress())
+    //     // Check if token accept is USDT
+    //     expect(await yfUSDTContract.token()).to.equal(tokenAddress)
+    //     // Check if no initial amount set in earn pool, vault pool, earn price and vault price
+    //     expect(await yfUSDTContract.earnPool()).to.equal(0)
+    //     expect(await yfUSDTContract.vaultPool()).to.equal(0)
+    //     expect(await yfUSDTContract.earnPrice()).to.equal(0)
+    //     expect(await yfUSDTContract.vaultPrice()).to.equal(0)
+    //     // Check if initial tier2 of deposit fee is 10001 <= tokenAmount <= 100000 (More details in contract)
+    //     expect(await yfUSDTContract.depositFeeTier2(0)).to.equal(10001)
+    //     expect(await yfUSDTContract.depositFeeTier2(1)).to.equal(100000)
+    //     // Check if initial deposit fee percentage is 1% for tier1, 0.5% for tier2, and 0.25% for tier3 (More details in contract)
+    //     expect(await yfUSDTContract.depositFeePercentage(0)).to.equal(100) // 1% = 100/10000, more detail in contract
+    //     expect(await yfUSDTContract.depositFeePercentage(1)).to.equal(50) // 1% = 50/10000, more detail in contract
+    //     expect(await yfUSDTContract.depositFeePercentage(2)).to.equal(25) // 1% = 25/10000, more detail in contract
+    //     // Check if initial profile sharing fee percentage is 10%
+    //     expect(await yfUSDTContract.profileSharingFeePercentage()).to.equal(10)
+    //     // Check if contract is not vesting
+    //     expect(await yfUSDTContract.isVesting()).is.false
+    //     // Check if treasury wallet address match given address
+    //     expect(await yfUSDTContract.treasuryWallet()).to.equal(treasuryWalletAddress)
+    //     // Check if Yearn USDT Earn contract and Yearn USDT Vault contract match given contract
+    //     expect(await yfUSDTContract.earn()).to.equal(yEarnAddress)
+    //     expect(await yfUSDTContract.vault()).to.equal(yVaultAddress)
+    //     // Check daoUSDT token is set properly
+    //     expect(await yfUSDTContract.name()).to.equal("DAO Tether USDT")
+    //     expect(await yfUSDTContract.symbol()).to.equal("daoUSDT")
+    //     expect(await yfUSDTContract.decimals()).to.equal(6)
+    // })
+
+    // Check user functions
+    describe("User functions", () => {
+        // it("should deposit earn and vault correctly", async () => {
+        //     const [accountSigner, _] = await ethers.getSigners()
+        //     const accountSignerAddress = await accountSigner.getAddress()
+
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+
+        //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
+
+        //     // Deposit into Yearn Farmer contract
+        //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
+        //     tx.wait()
+        //     let earnDepositAmount = 100
+        //     let vaultDepositAmount = 200
+        //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
+
+        //     // Test function earnDepositBalanceOf and vaultDepositBalanceOf
+        //     function afterDepositFee(amount) {
+        //         if (amount > 0 && amount <= 10000) {
+        //             return (amount - amount * 1 / 100).toString()
+        //         } else if (amount >= 10001 && amount <= 100000) {
+        //             return (amount - amount * 0.5 / 100).toString()
+        //         } else {
+        //             return (amount - amount * 0.25 / 100).toString()
+        //         }
+        //     }
+        //     earnDepositAmount = afterDepositFee(earnDepositAmount)
+        //     earnDepositAmount = new ethers.BigNumber.from(earnDepositAmount)
+        //     vaultDepositAmount = afterDepositFee(vaultDepositAmount)
+        //     vaultDepositAmount = new ethers.BigNumber.from(vaultDepositAmount)
+
+        //     let balance
+        //     balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
+        //     expect(balance).to.equal(earnDepositAmount)
+        //     balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
+        //     expect(balance).to.equal(vaultDepositAmount)
+
+        //     // Test function earnBalanceOf and vaultBalanceOf
+        //     const IYearnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, accountSigner)
+        //     const earnPool = await IYearnContract.calcPoolValueInToken()
+        //     const earnTotalSupply = await IYearnContract.totalSupply()
+        //     const earnShares = earnDepositAmount.mul(earnTotalSupply).div(earnPool)
+
+        //     const IYvaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, accountSigner)
+        //     const vaultPool = await IYvaultContract.balance()
+        //     const vaultTotalSupply = await IYvaultContract.totalSupply()
+        //     const vaultShares = vaultDepositAmount.mul(vaultTotalSupply).div(vaultPool)
+
+        //     balance = await yfUSDTContract.earnBalanceOf(accountSignerAddress)
+        //     expect(balance).to.equal(earnShares)
+        //     balance = await yfUSDTContract.vaultBalanceOf(accountSignerAddress)
+        //     expect(balance).to.equal(vaultShares)
+
+        //     // Test if deposit address is a contract
+        //     const SampleContract = await ethers.getContractFactory("SampleContract")
+        //     const sampleContract = await SampleContract.deploy(yfUSDTContract.address)
+        //     await sampleContract.deployed()
+        //     await hre.network.provider.request({
+        //         method: "hardhat_impersonateAccount",
+        //         params: [senderAddress]
+        //     })
+        //     const senderSigner = await ethers.provider.getSigner(senderAddress)
+        //     await tokenContract.connect(senderSigner).transfer(sampleContract.address, 10000000)
+        //     tx = await tokenContract.approve(sampleContract.address, 1000000)
+        //     tx.wait()
+        //     await expect(sampleContract.deposit()).to.be.reverted
+        // })
+
+        // it("should withdraw earn and vault correctly", async () => {
+        //     const [accountSigner, _] = await ethers.getSigners()
+        //     const accountSignerAddress = await accountSigner.getAddress()
+
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+
+        //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
+
+        //     // Deposit into Yearn Farmer contract
+        //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
+        //     tx.wait()
+        //     let earnDepositAmount = 100
+        //     let vaultDepositAmount = 200
+        //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
+
+        //     const daoTokenAmountBeforeWithdraw = await yfUSDTContract.balanceOf(accountSignerAddress)
+        //     const USDTAmountBeforeWithdraw = await tokenContract.balanceOf(accountSignerAddress)
+
+        //     // Withdraw from Yearn Farmer contract
+        //     const earnShares = await yfUSDTContract.earnBalanceOf(accountSignerAddress)
+        //     await yfUSDTContract.withdrawEarn(earnShares)
+        //     expect((await yfUSDTContract.earnPool()).toString()).to.equal("0")
+        //     expect((await yfUSDTContract.earnBalanceOf(accountSignerAddress)).toString()).to.equal("0")
+        //     expect(await yfUSDTContract.balanceOf(accountSignerAddress)).to.equal(daoTokenAmountBeforeWithdraw.sub(earnShares))
+        //     expect((await tokenContract.balanceOf(accountSignerAddress)).gt(USDTAmountBeforeWithdraw)).is.true
+        //     expect((await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)).toString()).to.equal("0")
+        //     await expect(yfUSDTContract.withdrawEarn(0)).to.be.revertedWith("Amount must be greater than 0")
+        //     await expect(yfUSDTContract.withdrawEarn(earnShares)).to.be.revertedWith("Insufficient Balances")
+
+        //     const vaultShares = await yfUSDTContract.vaultBalanceOf(accountSignerAddress)
+        //     await yfUSDTContract.withdrawVault(vaultShares)
+        //     expect((await yfUSDTContract.vaultPool()).toString()).to.equal("0")
+        //     expect((await yfUSDTContract.vaultBalanceOf(accountSignerAddress)).toString()).to.equal("0")
+        //     expect((await yfUSDTContract.balanceOf(accountSignerAddress)).toString()).to.equal("0")
+        //     expect((await tokenContract.balanceOf(accountSignerAddress)).gt(USDTAmountBeforeWithdraw)).is.true
+        //     expect((await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)).toString()).to.equal("0")
+        //     await expect(yfUSDTContract.withdrawVault(0)).to.be.revertedWith("Amount must be greater than 0")
+        //     await expect(yfUSDTContract.withdrawVault(vaultShares)).to.be.revertedWith("Insufficient Balances")
+        // })
+
+        // it("should approve Yearn Earn and Vault contract to deposit USDT from yfUSDT contract", async () => {
+        //     // This function only execute one time and already execute while yfUSDT contract deployed.
+        //     // User should ignore this function.
+
+        //     // Get address of owner and deploy the contract
+        //     const [senderSigner, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     // Check if Yearn Earn and Vault contract can deposit a huge amount of USDT from yfUSDT contract
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     await token.approve(yfUSDTContract.address, 500000000000000)
+        //     await expect(yfUSDTContract.deposit(250000000000000, 250000000000000)).not.to.be.reverted
+        // })
+
+        // it("should able to return shares and deposit amount correctly", async () => {
+        //     // Get address of owner and deploy the contract
+        //     const [senderSigner, _] = await ethers.getSigners()
+        //     const senderAddress = await senderSigner.getAddress()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     // Deposit 100 to Yearn Earn contract and 200 to Yearn Vault contract
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     await token.approve(yfUSDTContract.address, 1000)
+        //     await yfUSDTContract.deposit(100, 200)
+        //     // Check if balance deposit of Yearn Earn contract and Yearn Vault contract after deposit fee return correctly
+        //     // Deposit fee for amount < 10000 is 1% by default
+        //     const earnDepositBalance = 100 - (100 * 1 / 100)
+        //     const vaultDepositBalance = 200 - (200 * 1 / 100)
+        //     const earnDepositAmount = await yfUSDTContract.earnDepositBalanceOf(senderAddress)
+        //     const vaultDepositAmount = await yfUSDTContract.vaultDepositBalanceOf(senderAddress)
+        //     expect(earnDepositAmount).to.equal(earnDepositBalance)
+        //     expect(vaultDepositAmount).to.equal(vaultDepositBalance)
+        //     // Get Yearn Earn shares off-chain
+        //     const IYearnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, senderSigner)
+        //     const earnPool = await IYearnContract.calcPoolValueInToken()
+        //     const earnTotalSupply = await IYearnContract.totalSupply()
+        //     const earnShares = earnDepositAmount.mul(earnTotalSupply).div(earnPool)
+        //     // Get Yearn Vault shares off-chain
+        //     const IYvaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, senderSigner)
+        //     const vaultPool = await IYvaultContract.balance()
+        //     const vaultTotalSupply = await IYvaultContract.totalSupply()
+        //     const vaultShares = vaultDepositAmount.mul(vaultTotalSupply).div(vaultPool)
+        //     // Check if balance shares of Yearn Earn contract and Yearn Vault contract return correctly
+        //     expect(await yfUSDTContract.earnBalanceOf(senderAddress)).to.equal(earnShares)
+        //     expect(await yfUSDTContract.vaultBalanceOf(senderAddress)).to.equal(vaultShares)
+        // })
     })
 
-    it("should able to transfer contract ownership to other address by contract owner only", async () => {
-        // Get address of owner and new owner and deploy the contract
-        const [ownerSigner, newOwnerSigner, _] = await ethers.getSigners()
-        const ownerSignerAddress = await ownerSigner.getAddress()
-        const newOwnerSignerAddress = await newOwnerSigner.getAddress()
-        const YfUSDTContract = await ethers.getContractFactory("yfUSDT", ownerSigner)
-        const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        await yfUSDTContract.deployed()
-        // Check if contract ownership is owner before transfer
-        expect(await yfUSDTContract.owner()).to.equal(ownerSignerAddress)
-        // Check if new owner cannot execute admin function yet
-        await expect(yfUSDTContract.connect(newOwnerSigner).setProfileSharingFeePercentage(20)).to.be.reverted
-        // Transfer contract ownership from owner to new owner
-        await yfUSDTContract.transferOwnership(newOwnerSignerAddress)
-        // Check if contract ownership is new owner after transfer
-        expect(await yfUSDTContract.owner()).to.equal(newOwnerSignerAddress)
-        // Check if new owner can execute admin function
-        await expect(yfUSDTContract.connect(newOwnerSigner).setProfileSharingFeePercentage(20)).not.to.be.reverted
-        // Check if original owner neither can execute admin function nor transfer back ownership
-        await expect(yfUSDTContract.connect(ownerSigner).setProfileSharingFeePercentage(20)).to.be.reverted
-        await expect(yfUSDTContract.connect(ownerSigner).transferOwnership(ownerSignerAddress)).to.be.reverted
+
+    // Test admin functions
+    describe("Admin functions", () => {
+        // it("should able to transfer contract ownership to other address by contract owner only", async () => {
+        //     // Get address of owner and new owner and deploy the contract
+        //     const [ownerSigner, newOwnerSigner, _] = await ethers.getSigners()
+        //     const ownerSignerAddress = await ownerSigner.getAddress()
+        //     const newOwnerSignerAddress = await newOwnerSigner.getAddress()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", ownerSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if contract ownership is owner before transfer
+        //     expect(await yfUSDTContract.owner()).to.equal(ownerSignerAddress)
+        //     // Check if new owner cannot execute admin function yet
+        //     await expect(yfUSDTContract.connect(newOwnerSigner).setProfileSharingFeePercentage(20)).to.be.reverted
+        //     // Transfer contract ownership from owner to new owner
+        //     await yfUSDTContract.transferOwnership(newOwnerSignerAddress)
+        //     // Check if contract ownership is new owner after transfer
+        //     expect(await yfUSDTContract.owner()).to.equal(newOwnerSignerAddress)
+        //     // Check if new owner can execute admin function
+        //     await expect(yfUSDTContract.connect(newOwnerSigner).setProfileSharingFeePercentage(20)).not.to.be.reverted
+        //     // Check if original owner neither can execute admin function nor transfer back ownership
+        //     await expect(yfUSDTContract.connect(ownerSigner).setProfileSharingFeePercentage(20)).to.be.reverted
+        //     await expect(yfUSDTContract.connect(ownerSigner).transferOwnership(ownerSignerAddress)).to.be.reverted
+        // })
+
+        // it("should able to set new treasury wallet correctly", async () => {
+        //     // Get address of sender and new treasury wallet and deploy the contract
+        //     const [senderSigner, newTreasuryWalletSigner, _] = await ethers.getSigners()
+        //     const newTreasuryWalletAddress = await newTreasuryWalletSigner.getAddress()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if only contract owner can execute this function
+        //     await expect(yfUSDTContract.connect(newTreasuryWalletSigner).setTreasuryWallet(newTreasuryWalletAddress))
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Set new treasury wallet
+        //     await yfUSDTContract.setTreasuryWallet(newTreasuryWalletAddress)
+        //     // Check if new treasury wallet is set to the contract
+        //     expect(await yfUSDTContract.treasuryWallet()).to.equal(newTreasuryWalletAddress)
+        //     // Check if new treasury wallet receive fees
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     await token.approve(yfUSDTContract.address, 1000)
+        //     await yfUSDTContract.deposit(100, 200)
+        //     // - 100 + 200 < 300 within deposit fee tier 1 hence fee = 1%
+        //     expect(await token.balanceOf(newTreasuryWalletAddress)).to.equal(3)
+        //     // Check if event for setTreasuryWallet function is logged (by set back original treasury wallet)
+        //     await expect(yfUSDTContract.setTreasuryWallet(treasuryWalletAddress))
+        //         .to.emit(yfUSDTContract, "SetTreasuryWallet")
+        //         .withArgs(newTreasuryWalletAddress, treasuryWalletAddress)
+        // })
+
+        // it("should able to set new deposit fee tier correctly", async () => {
+        //     // Get signer of sender and hacker and deploy the contract
+        //     const [senderSigner, hackerSigner, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if only contract owner can execute the function
+        //     await expect(yfUSDTContract.connect(hackerSigner).setDepositFeeTier2([1, 2]))
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Check if function parameter meet the requirements
+        //     await expect(yfUSDTContract.setDepositFeeTier2([0, 10000]))
+        //         .to.be.revertedWith("Minimun amount cannot be 0")
+        //     await expect(yfUSDTContract.setDepositFeeTier2([10000, 10000]))
+        //         .to.be.revertedWith("Maximun amount must greater than minimun amount")
+        //     // Set deposit fee tier 2 with minimun 50001 and maximun 500000 (default 10001, 100000)
+        //     expect(await yfUSDTContract.depositFeeTier2(0)).to.equal(10001)
+        //     expect(await yfUSDTContract.depositFeeTier2(1)).to.equal(100000)
+        //     await yfUSDTContract.setDepositFeeTier2([50001, 500000])
+        //     // Check if deposit fee tier 2 amount is set correctly
+        //     expect(await yfUSDTContract.depositFeeTier2(0)).to.equal(50001)
+        //     expect(await yfUSDTContract.depositFeeTier2(1)).to.equal(500000)
+        //     // Check if event for setDepositFeeTier2() is log (by set back the default tier 2 amount)
+        //     await expect(yfUSDTContract.setDepositFeeTier2([10001, 100000]))
+        //         .to.emit(yfUSDTContract, "SetDepositFeeTier2")
+        //         .withArgs([50001, 500000], [10001, 100000]) // [oldDepositFeeTier2, newDepositFeeTier2]
+        // })
+
+        // it("should able to set new deposit fee percentage correctly", async () => {
+        //     // Get signer of sender and hacker and deploy the contract
+        //     const [senderSigner, hackerSigner, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if only contract owner can execute the function
+        //     // 100 = 1%
+        //     await expect(yfUSDTContract.connect(hackerSigner).setDepositFeePercentage([3900, 3900, 3900]))
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Check if function parameter meet the requirements
+        //     await expect(yfUSDTContract.setDepositFeePercentage([4000, 0, 0]))
+        //         .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
+        //     await expect(yfUSDTContract.setDepositFeePercentage([0, 4000, 0]))
+        //         .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
+        //     await expect(yfUSDTContract.setDepositFeePercentage([0, 0, 4000]))
+        //         .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
+        //     // Set deposit fee percentage to tier1 2%, tier2 1%, tier3 0.5% (default tier1 1%, tier2 0.5%, tier3 0.25%)
+        //     expect(await yfUSDTContract.depositFeePercentage(0)).to.equal(100)
+        //     expect(await yfUSDTContract.depositFeePercentage(1)).to.equal(50)
+        //     expect(await yfUSDTContract.depositFeePercentage(2)).to.equal(25)
+        //     await yfUSDTContract.setDepositFeePercentage([200, 100, 50])
+        //     // Check if deposit fee percentage is set correctly
+        //     expect(await yfUSDTContract.depositFeePercentage(0)).to.equal(200)
+        //     expect(await yfUSDTContract.depositFeePercentage(1)).to.equal(100)
+        //     expect(await yfUSDTContract.depositFeePercentage(2)).to.equal(50)
+        //     // Check if event for setDepositFeePercentage() is log (by set back the default deposit fee percentage)
+        //     await expect(yfUSDTContract.setDepositFeePercentage([100, 50, 25]))
+        //         .to.emit(yfUSDTContract, "SetDepositFeePercentage")
+        //         .withArgs([200, 100, 50], [100, 50, 25]) // [oldDepositFeePercentage, newDepositFeePercentage]
+        // })
+
+        // it("should able to set new profile sharing fee percentage correctly", async () => {
+        //     // Get signer of sender and hacker and deploy the contract
+        //     const [senderSigner, hackerSigner, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if only contract owner can execute the function
+        //     await expect(yfUSDTContract.connect(hackerSigner).setProfileSharingFeePercentage(39))
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Check if function parameter meet the requirements
+        //     await expect(yfUSDTContract.setProfileSharingFeePercentage(40))
+        //         .to.be.revertedWith("Profile sharing fee percentage cannot be more than 40%")
+        //     // Set profile sharing fee percentage to 20% (default 10%)
+        //     expect(await yfUSDTContract.profileSharingFeePercentage()).to.equal(10)
+        //     await yfUSDTContract.setProfileSharingFeePercentage(20)
+        //     // Check if profile sharing fee percentage is set correctly
+        //     expect(await yfUSDTContract.profileSharingFeePercentage()).to.equal(20)
+        //     // Check if event for setProfileSharingFeePercentage() is log (by set back the default profile sharing fee percentage)
+        //     await expect(yfUSDTContract.setProfileSharingFeePercentage(10))
+        //         .to.emit(yfUSDTContract, "SetProfileSharingFeePercentage")
+        //         .withArgs(20, 10) // [oldProfileSharingFeePercentage, newProfileSharingFeePercentage]
+        // })
+
+        // it("should able to set new Yearn Earn contract correctly", async () => {
+        //     // Get signer of sender, malicious account and new Yearn Earn contract and deploy the contract
+        //     const [senderSigner, maliciousSigner, newYEarnContract, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if only contract owner can execute the function
+        //     await expect(yfUSDTContract.connect(maliciousSigner).setEarn(await maliciousSigner.getAddress()))
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Set new Yearn Earn contract
+        //     expect(await yfUSDTContract.earn()).to.equal(yEarnAddress)
+        //     newYEarnContractAddress = await newYEarnContract.getAddress()
+        //     await yfUSDTContract.setEarn(newYEarnContractAddress)
+        //     // Check if new Yearn Earn contract is set correctly
+        //     expect(await yfUSDTContract.earn()).to.equal(newYEarnContractAddress)
+        //     // Check if event for setEarn() is log (by set back the default Yearn Earn contract)
+        //     await expect(yfUSDTContract.setEarn(yEarnAddress))
+        //         .to.emit(yfUSDTContract, "SetEarn")
+        //         .withArgs(newYEarnContractAddress, yEarnAddress) // [old Yearn Earn contract Address, new Yearn Earn contract Address]
+        // })
+
+        // it("should able to set new Yearn Vault contract correctly", async () => {
+        //     // Get signer of sender, malicious account and new Yearn Vault contract and deploy the contract
+        //     const [senderSigner, maliciousSigner, newYVaultContract, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+        //     // Check if only contract owner can execute the function
+        //     await expect(yfUSDTContract.connect(maliciousSigner).setVault(await maliciousSigner.getAddress()))
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Set new Yearn Vault contract
+        //     expect(await yfUSDTContract.vault()).to.equal(yVaultAddress)
+        //     newYVaultContractAddress = await newYVaultContract.getAddress()
+        //     await yfUSDTContract.setVault(newYVaultContractAddress)
+        //     // Check if new Yearn Vault contract is set correctly
+        //     expect(await yfUSDTContract.vault()).to.equal(newYVaultContractAddress)
+        //     // Check if event for setVault() is log (by set back the default Yearn Vault contract)
+        //     await expect(yfUSDTContract.setVault(yVaultAddress))
+        //         .to.emit(yfUSDTContract, "SetVault")
+        //         .withArgs(newYVaultContractAddress, yVaultAddress) // [old Yearn Vault contract Address, new Yearn Vault contract Address]
+        // })
+
+        // it("should send deposit fee and profile sharing fee to treasury wallet correctly", async () => {
+        //     const [accountSigner, _] = await ethers.getSigners()
+        //     const accountSignerAddress = await accountSigner.getAddress()
+
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     await yfUSDTContract.deployed()
+
+        //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
+
+        //     // Clear out all token in treasury wallet
+        //     await hre.network.provider.request({
+        //         method: "hardhat_impersonateAccount",
+        //         params: [treasuryWalletAddress]
+        //     })
+        //     const treasuryWalletSigner = await ethers.provider.getSigner(treasuryWalletAddress)
+        //     await tokenContract.connect(treasuryWalletSigner).transfer(yfUSDTContract.address, await tokenContract.balanceOf(treasuryWalletAddress))
+
+        //     // Deposit into Yearn Farmer contract
+        //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
+        //     tx.wait()
+        //     let earnDepositAmount = 100 // Also test with 10000, 100000
+        //     let vaultDepositAmount = 200 // Also test with 20000, 200000
+        //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
+
+        //     let earnDepositFee, vaultDepositFee, depositFee
+        //     balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
+        //     earnDepositFee = earnDepositAmount - balance
+        //     balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
+        //     vaultDepositFee = vaultDepositAmount - balance
+        //     depositFee = earnDepositFee + vaultDepositFee
+        //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
+
+        //     // Withdraw from Yearn Farmer Contract
+        //     let profileSharingFee
+        //     await yfUSDTContract.withdrawEarn(await yfUSDTContract.earnBalanceOf(accountSignerAddress))
+        //     profileSharingFee = 0
+        //     // profileSharingFee = 100 * 0.1 // 10%
+        //     depositFee += profileSharingFee
+        //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
+
+        //     await yfUSDTContract.withdrawVault(await yfUSDTContract.vaultBalanceOf(accountSignerAddress))
+        //     profileSharingFee = 0
+        //     // profileSharingFee = 200 * 0.1 // 10%
+        //     depositFee += profileSharingFee
+        //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
+        // })
     })
-
-
-    // it("should deposit earn and vault correctly", async () => {
-    //     const [accountSigner, _] = await ethers.getSigners()
-    //     const accountSignerAddress = await accountSigner.getAddress()
-
-    //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-    //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-    //     await yfUSDTContract.deployed()
-
-    //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-
-    //     // Deposit into Yearn Farmer contract
-    //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-    //     tx.wait()
-    //     let earnDepositAmount = 100
-    //     let vaultDepositAmount = 200
-    //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-
-    //     // Test function earnDepositBalanceOf and vaultDepositBalanceOf
-    //     function afterDepositFee(amount) {
-    //         if (amount > 0 && amount <= 10000) {
-    //             return (amount - amount * 1 / 100).toString()
-    //         } else if (amount >= 10001 && amount <= 100000) {
-    //             return (amount - amount * 0.5 / 100).toString()
-    //         } else {
-    //             return (amount - amount * 0.25 / 100).toString()
-    //         }
-    //     }
-    //     earnDepositAmount = afterDepositFee(earnDepositAmount)
-    //     earnDepositAmount = new ethers.BigNumber.from(earnDepositAmount)
-    //     vaultDepositAmount = afterDepositFee(vaultDepositAmount)
-    //     vaultDepositAmount = new ethers.BigNumber.from(vaultDepositAmount)
-
-    //     let balance
-    //     balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     expect(balance).to.equal(earnDepositAmount)
-    //     balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     expect(balance).to.equal(vaultDepositAmount)
-
-    //     // Test function earnBalanceOf and vaultBalanceOf
-    //     const IYearnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, accountSigner)
-    //     const earnPool = await IYearnContract.calcPoolValueInToken()
-    //     const earnTotalSupply = await IYearnContract.totalSupply()
-    //     const earnShares = earnDepositAmount.mul(earnTotalSupply).div(earnPool)
-
-    //     const IYvaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, accountSigner)
-    //     const vaultPool = await IYvaultContract.balance()
-    //     const vaultTotalSupply = await IYvaultContract.totalSupply()
-    //     const vaultShares = vaultDepositAmount.mul(vaultTotalSupply).div(vaultPool)
-
-    //     balance = await yfUSDTContract.earnBalanceOf(accountSignerAddress)
-    //     expect(balance).to.equal(earnShares)
-    //     balance = await yfUSDTContract.vaultBalanceOf(accountSignerAddress)
-    //     expect(balance).to.equal(vaultShares)
-
-    //     // Test if deposit address is a contract
-    //     const SampleContract = await ethers.getContractFactory("SampleContract")
-    //     const sampleContract = await SampleContract.deploy(yfUSDTContract.address)
-    //     await sampleContract.deployed()
-    //     await hre.network.provider.request({
-    //         method: "hardhat_impersonateAccount",
-    //         params: [senderAddress]
-    //     })
-    //     const senderSigner = await ethers.provider.getSigner(senderAddress)
-    //     await tokenContract.connect(senderSigner).transfer(sampleContract.address, 10000000)
-    //     tx = await tokenContract.approve(sampleContract.address, 1000000)
-    //     tx.wait()
-    //     await expect(sampleContract.deposit()).to.be.reverted
-    // })
-
-
-    // it("should set deposit fee tier correctly", async () => {
-    //     const [accountSigner, _] = await ethers.getSigners()
-    //     const accountSignerAddress = await accountSigner.getAddress()
-
-    //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-    //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-    //     await yfUSDTContract.deployed()
-
-    //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-    //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-    //     tx.wait()
-
-    //     // const depositFeeTier2 = [5000, 50000]
-    //     // await yfUSDTContract.setDepositFeeTier(depositFeeTier2)
-    //     // expect(await yfUSDTContract.depositFeeTier2(0)).to.equal(depositFeeTier2[0])
-    //     // expect(await yfUSDTContract.depositFeeTier2(1)).to.equal(depositFeeTier2[1])
-        
-    //     let balance
-
-    //     // const earnDepositAmount = 100
-    //     // const vaultDepositAmount = 200
-    //     // await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-    //     // balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     // const earnDepositAmountAfterFee = earnDepositAmount - (earnDepositAmount * 1 / 100)
-    //     // expect(balance.toString()).to.equal(earnDepositAmountAfterFee.toString())
-    //     // balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     // const vaultDepositAmountAfterFee = vaultDepositAmount - (vaultDepositAmount * 1 / 100)
-    //     // expect(balance.toString()).to.equal(vaultDepositAmountAfterFee.toString())
-
-    //     // const earnDepositAmount = 20000
-    //     // const vaultDepositAmount = 30000
-    //     // await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-    //     // balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     // const earnDepositAmountAfterFee = earnDepositAmount - (earnDepositAmount * 0.5 / 100)
-    //     // expect(balance.toString()).to.equal(earnDepositAmountAfterFee.toString())
-    //     // const vaultDepositAmountAfterFee = vaultDepositAmount - (vaultDepositAmount * 0.5 / 100)
-    //     // balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     // expect(balance.toString()).to.equal(vaultDepositAmountAfterFee.toString())
-
-    //     // const earnDepositAmount = 30000
-    //     // const vaultDepositAmount = 30000
-    //     // await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-    //     // balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     // const earnDepositAmountAfterFee = earnDepositAmount - (earnDepositAmount * 0.25 / 100)
-    //     // expect(balance.toString()).to.equal(earnDepositAmountAfterFee.toString())
-    //     // const vaultDepositAmountAfterFee = vaultDepositAmount - (vaultDepositAmount * 0.25 / 100)
-    //     // balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     // expect(balance.toString()).to.equal(vaultDepositAmountAfterFee.toString())
-
-    //     // const hackerSigner = await ethers.provider.getSigner(accountSigners[1].address)
-    //     // await expect(yfUSDTContract.connect(hackerSigner).setDepositFeeTier([1, 2])).to.be.reverted
-    // })
-
-
-    // it("should set deposit fee percentage correctly", async () => {
-    //     const [accountSigner, hackerSigner, _] = await ethers.getSigners()
-    //     const accountSignerAddress = await accountSigner.getAddress()
-
-    //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-    //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-    //     await yfUSDTContract.deployed()
-
-    //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-    //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-    //     tx.wait()
-
-    //     // const hackerSigner = await ethers.provider.getSigner(accountSigners[1].address)
-    //     await expect(yfUSDTContract.connect(hackerSigner).setDepositFeePercentage([390, 390, 390])).to.be.reverted
-    //     await expect(yfUSDTContract.connect(accountSigner).setDepositFeePercentage([1000, 1000, 1000])).to.be.reverted
-
-    //     let earnBalanceBeforeDeposit, earnBalanceAfterDeposit, earnBalance
-    //     let vaultBalanceBeforeDeposit, vaultBalanceAfterDeposit, vaultBalance
-    //     const earnDepositAmount = 100
-    //     const vaultDepositAmount = 200
-    //     const totalDepositAmount = earnDepositAmount + vaultDepositAmount
-    //     const tier1ProfileSharingFeePercentage = 200
-    //     const tier2ProfileSharingFeePercentage = 100
-    //     const tier3ProfileSharingFeePercentage = 75
-    //     await yfUSDTContract.setDepositFeePercentage([
-    //         tier1ProfileSharingFeePercentage, 
-    //         tier2ProfileSharingFeePercentage, 
-    //         tier3ProfileSharingFeePercentage
-    //     ])
-    //     earnBalanceBeforeDeposit = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     vaultBalanceBeforeDeposit = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-    //     earnBalanceAfterDeposit = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     vaultBalanceAfterDeposit = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     earnBalance = earnBalanceAfterDeposit - earnBalanceBeforeDeposit
-    //     vaultBalance = vaultBalanceAfterDeposit - vaultBalanceBeforeDeposit
-    //     let expectedEarnBalance, expectedVaultBalance
-    //     if (totalDepositAmount < 10000) {
-    //         expectedEarnBalance = earnDepositAmount - (earnDepositAmount * tier1ProfileSharingFeePercentage / 10000)
-    //         expectedVaultBalance = vaultDepositAmount - (vaultDepositAmount * tier1ProfileSharingFeePercentage / 10000)
-    //     } else if (totalDepositAmount >= 10000 && totalDepositAmount <= 100000) {
-    //         expectedEarnBalance = earnDepositAmount - (earnDepositAmount * tier2ProfileSharingFeePercentage / 10000)
-    //         expectedVaultBalance = vaultDepositAmount - (vaultDepositAmount * tier2ProfileSharingFeePercentage / 10000)
-    //     } else {
-    //         expectedEarnBalance = earnDepositAmount - (earnDepositAmount * tier3ProfileSharingFeePercentage / 10000)
-    //         expectedVaultBalance = vaultDepositAmount - (vaultDepositAmount * tier3ProfileSharingFeePercentage / 10000)
-    //     }
-    //     expect(earnBalance).to.equal(expectedEarnBalance)
-    //     expect(vaultBalance).to.equal(expectedVaultBalance)
-    // })
-
-
-    // it("should withdraw earn and vault correctly", async () => {
-    //     const [accountSigner, _] = await ethers.getSigners()
-    //     const accountSignerAddress = await accountSigner.getAddress()
-
-    //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-    //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-    //     await yfUSDTContract.deployed()
-
-    //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-
-    //     // Deposit into Yearn Farmer contract
-    //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-    //     tx.wait()
-    //     let earnDepositAmount = 100
-    //     let vaultDepositAmount = 200
-    //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-
-    //     const daoTokenAmountBeforeWithdraw = await yfUSDTContract.balanceOf(accountSignerAddress)
-    //     const USDTAmountBeforeWithdraw = await tokenContract.balanceOf(accountSignerAddress)
-
-    //     // Withdraw from Yearn Farmer contract
-    //     const earnShares = await yfUSDTContract.earnBalanceOf(accountSignerAddress)
-    //     await yfUSDTContract.withdrawEarn(earnShares)
-    //     expect((await yfUSDTContract.earnPool()).toString()).to.equal("0")
-    //     expect((await yfUSDTContract.earnBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-    //     expect(await yfUSDTContract.balanceOf(accountSignerAddress)).to.equal(daoTokenAmountBeforeWithdraw.sub(earnShares))
-    //     expect((await tokenContract.balanceOf(accountSignerAddress)).gt(USDTAmountBeforeWithdraw)).is.true
-    //     expect((await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-    //     await expect(yfUSDTContract.withdrawEarn(0)).to.be.revertedWith("Amount must be greater than 0")
-    //     await expect(yfUSDTContract.withdrawEarn(earnShares)).to.be.revertedWith("Insufficient Balances")
-
-    //     const vaultShares = await yfUSDTContract.vaultBalanceOf(accountSignerAddress)
-    //     await yfUSDTContract.withdrawVault(vaultShares)
-    //     expect((await yfUSDTContract.vaultPool()).toString()).to.equal("0")
-    //     expect((await yfUSDTContract.vaultBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-    //     expect((await yfUSDTContract.balanceOf(accountSignerAddress)).toString()).to.equal("0")
-    //     expect((await tokenContract.balanceOf(accountSignerAddress)).gt(USDTAmountBeforeWithdraw)).is.true
-    //     expect((await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-    //     await expect(yfUSDTContract.withdrawVault(0)).to.be.revertedWith("Amount must be greater than 0")
-    //     await expect(yfUSDTContract.withdrawVault(vaultShares)).to.be.revertedWith("Insufficient Balances")
-    // })
-
-
-    // // it("should set withdraw fee percentage correctly", async () => {
-    // //     // TO DO
-    // // })
-
-
-    // it("should send deposit fee and profile sharing fee to treasury wallet correctly", async () => {
-    //     const [accountSigner, _] = await ethers.getSigners()
-    //     const accountSignerAddress = await accountSigner.getAddress()
-
-    //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-    //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-    //     await yfUSDTContract.deployed()
-
-    //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-
-    //     // Clear out all token in treasury wallet
-    //     await hre.network.provider.request({
-    //         method: "hardhat_impersonateAccount",
-    //         params: [treasuryWalletAddress]
-    //     })
-    //     const treasuryWalletSigner = await ethers.provider.getSigner(treasuryWalletAddress)
-    //     await tokenContract.connect(treasuryWalletSigner).transfer(yfUSDTContract.address, await tokenContract.balanceOf(treasuryWalletAddress))
-
-    //     // Deposit into Yearn Farmer contract
-    //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-    //     tx.wait()
-    //     let earnDepositAmount = 100 // Also test with 10000, 100000
-    //     let vaultDepositAmount = 200 // Also test with 20000, 200000
-    //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-
-    //     let earnDepositFee, vaultDepositFee, depositFee
-    //     balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-    //     earnDepositFee = earnDepositAmount - balance
-    //     balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-    //     vaultDepositFee = vaultDepositAmount - balance
-    //     depositFee = earnDepositFee + vaultDepositFee
-    //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
-
-    //     // Withdraw from Yearn Farmer Contract
-    //     let profileSharingFee
-    //     await yfUSDTContract.withdrawEarn(await yfUSDTContract.earnBalanceOf(accountSignerAddress))
-    //     profileSharingFee = 0
-    //     // profileSharingFee = 100 * 0.1 // 10%
-    //     depositFee += profileSharingFee
-    //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
-
-    //     await yfUSDTContract.withdrawVault(await yfUSDTContract.vaultBalanceOf(accountSignerAddress))
-    //     profileSharingFee = 0
-    //     // profileSharingFee = 200 * 0.1 // 10%
-    //     depositFee += profileSharingFee
-    //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
-    // })
-
 })
