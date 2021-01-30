@@ -98,130 +98,124 @@ describe("yfUSDT", () => {
 
     // Check user functions
     describe("User functions", () => {
-        // it("should deposit earn and vault correctly", async () => {
-        //     const [accountSigner, _] = await ethers.getSigners()
-        //     const accountSignerAddress = await accountSigner.getAddress()
+    //     it("should able to deposit earn and vault correctly", async () => {
+    //         // Get sender and client address and deploy the contract
+    //         const [senderSigner, clientSigner, _] = await ethers.getSigners()
+    //         const clientAddress = await clientSigner.getAddress()
+    //         const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+    //         const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+    //         await yfUSDTContract.deployed()
+    //         // Transfer some USDT to client
+    //         const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+    //         await token.transfer(clientAddress, 1000)
+    //         expect(await token.balanceOf(clientAddress)).to.equal(1000)
+    //         // Check if caller and deposit amount meet the function requirements
+    //         const SampleContract = await ethers.getContractFactory("SampleContract")
+    //         const sampleContract = await SampleContract.deploy(yfUSDTContract.address, tokenAddress)
+    //         await sampleContract.deployed()
+    //         await token.transfer(sampleContract.address, 1000)
+    //         expect(await token.balanceOf(sampleContract.address)).to.equal(1000)
+    //         await sampleContract.approve()
+    //         await expect(sampleContract.deposit()).to.be.revertedWith("Caller is a contract not EOA")
+    //         await expect(yfUSDTContract.connect(clientSigner).deposit(0, 0)).to.be.revertedWith("Deposit Amount must be greater than 0")
+    //         // Deposit 100 USDT to Yearn Earn contract and 200 to Yearn Vault Contract
+    //         await token.connect(clientSigner).approve(yfUSDTContract.address, 10000000000)
+    //         await yfUSDTContract.connect(clientSigner).deposit(100, 200)
+    //         // Check if user should get correct deposit and shares amount
+    //         // Check if user deposit successfully with correct amount
+    //         const earnDepositAmount = await yfUSDTContract.earnDepositBalanceOf(clientAddress)
+    //         const vaultDepositAmount = await yfUSDTContract.vaultDepositBalanceOf(clientAddress)
+    //         // Deposit fee for amount < 10000 is 1% by default
+    //         const earnDepositBalance = 100 - (100 * 1 / 100)
+    //         const vaultDepositBalance = 200 - (200 * 1 / 100)
+    //         expect(earnDepositAmount).to.equal(earnDepositBalance)
+    //         expect(vaultDepositAmount).to.equal(vaultDepositBalance)
+    //         // Get Yearn Earn shares off-chain
+    //         const IYearnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, senderSigner)
+    //         const earnPool = await IYearnContract.calcPoolValueInToken()
+    //         const earnTotalSupply = await IYearnContract.totalSupply()
+    //         const earnShares = earnDepositAmount.mul(earnTotalSupply).div(earnPool)
+    //         // Get Yearn Vault shares off-chain
+    //         const IYvaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, senderSigner)
+    //         const vaultPool = await IYvaultContract.balance()
+    //         const vaultTotalSupply = await IYvaultContract.totalSupply()
+    //         const vaultShares = vaultDepositAmount.mul(vaultTotalSupply).div(vaultPool)
+    //         // Check if balance shares of Yearn Earn contract and Yearn Vault contract return correctly
+    //         expect(await yfUSDTContract.earnBalanceOf(clientAddress)).to.equal(earnShares)
+    //         expect(await yfUSDTContract.vaultBalanceOf(clientAddress)).to.equal(vaultShares)
+    //         // Check if correct daoUSDT token amount receive after deposit (same as total deposit amount of shares)
+    //         expect(await yfUSDTContract.balanceOf(clientAddress)).to.equal(earnShares.add(vaultShares))
+    //     })
 
-        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        //     await yfUSDTContract.deployed()
-
-        //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-
-        //     // Deposit into Yearn Farmer contract
-        //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-        //     tx.wait()
-        //     let earnDepositAmount = 100
-        //     let vaultDepositAmount = 200
-        //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-
-        //     // Test function earnDepositBalanceOf and vaultDepositBalanceOf
-        //     function afterDepositFee(amount) {
-        //         if (amount > 0 && amount <= 10000) {
-        //             return (amount - amount * 1 / 100).toString()
-        //         } else if (amount >= 10001 && amount <= 100000) {
-        //             return (amount - amount * 0.5 / 100).toString()
-        //         } else {
-        //             return (amount - amount * 0.25 / 100).toString()
-        //         }
-        //     }
-        //     earnDepositAmount = afterDepositFee(earnDepositAmount)
-        //     earnDepositAmount = new ethers.BigNumber.from(earnDepositAmount)
-        //     vaultDepositAmount = afterDepositFee(vaultDepositAmount)
-        //     vaultDepositAmount = new ethers.BigNumber.from(vaultDepositAmount)
-
-        //     let balance
-        //     balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-        //     expect(balance).to.equal(earnDepositAmount)
-        //     balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-        //     expect(balance).to.equal(vaultDepositAmount)
-
-        //     // Test function earnBalanceOf and vaultBalanceOf
-        //     const IYearnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, accountSigner)
-        //     const earnPool = await IYearnContract.calcPoolValueInToken()
-        //     const earnTotalSupply = await IYearnContract.totalSupply()
-        //     const earnShares = earnDepositAmount.mul(earnTotalSupply).div(earnPool)
-
-        //     const IYvaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, accountSigner)
-        //     const vaultPool = await IYvaultContract.balance()
-        //     const vaultTotalSupply = await IYvaultContract.totalSupply()
-        //     const vaultShares = vaultDepositAmount.mul(vaultTotalSupply).div(vaultPool)
-
-        //     balance = await yfUSDTContract.earnBalanceOf(accountSignerAddress)
-        //     expect(balance).to.equal(earnShares)
-        //     balance = await yfUSDTContract.vaultBalanceOf(accountSignerAddress)
-        //     expect(balance).to.equal(vaultShares)
-
-        //     // Test if deposit address is a contract
-        //     const SampleContract = await ethers.getContractFactory("SampleContract")
-        //     const sampleContract = await SampleContract.deploy(yfUSDTContract.address)
-        //     await sampleContract.deployed()
-        //     await hre.network.provider.request({
-        //         method: "hardhat_impersonateAccount",
-        //         params: [senderAddress]
-        //     })
-        //     const senderSigner = await ethers.provider.getSigner(senderAddress)
-        //     await tokenContract.connect(senderSigner).transfer(sampleContract.address, 10000000)
-        //     tx = await tokenContract.approve(sampleContract.address, 1000000)
-        //     tx.wait()
-        //     await expect(sampleContract.deposit()).to.be.reverted
-        // })
-
-        // it("should withdraw earn and vault correctly", async () => {
-        //     const [accountSigner, _] = await ethers.getSigners()
-        //     const accountSignerAddress = await accountSigner.getAddress()
-
-        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
-        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        //     await yfUSDTContract.deployed()
-
-        //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-
-        //     // Deposit into Yearn Farmer contract
-        //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-        //     tx.wait()
-        //     let earnDepositAmount = 100
-        //     let vaultDepositAmount = 200
-        //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-
-        //     const daoTokenAmountBeforeWithdraw = await yfUSDTContract.balanceOf(accountSignerAddress)
-        //     const USDTAmountBeforeWithdraw = await tokenContract.balanceOf(accountSignerAddress)
-
-        //     // Withdraw from Yearn Farmer contract
-        //     const earnShares = await yfUSDTContract.earnBalanceOf(accountSignerAddress)
-        //     await yfUSDTContract.withdrawEarn(earnShares)
-        //     expect((await yfUSDTContract.earnPool()).toString()).to.equal("0")
-        //     expect((await yfUSDTContract.earnBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-        //     expect(await yfUSDTContract.balanceOf(accountSignerAddress)).to.equal(daoTokenAmountBeforeWithdraw.sub(earnShares))
-        //     expect((await tokenContract.balanceOf(accountSignerAddress)).gt(USDTAmountBeforeWithdraw)).is.true
-        //     expect((await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-        //     await expect(yfUSDTContract.withdrawEarn(0)).to.be.revertedWith("Amount must be greater than 0")
-        //     await expect(yfUSDTContract.withdrawEarn(earnShares)).to.be.revertedWith("Insufficient Balances")
-
-        //     const vaultShares = await yfUSDTContract.vaultBalanceOf(accountSignerAddress)
-        //     await yfUSDTContract.withdrawVault(vaultShares)
-        //     expect((await yfUSDTContract.vaultPool()).toString()).to.equal("0")
-        //     expect((await yfUSDTContract.vaultBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-        //     expect((await yfUSDTContract.balanceOf(accountSignerAddress)).toString()).to.equal("0")
-        //     expect((await tokenContract.balanceOf(accountSignerAddress)).gt(USDTAmountBeforeWithdraw)).is.true
-        //     expect((await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)).toString()).to.equal("0")
-        //     await expect(yfUSDTContract.withdrawVault(0)).to.be.revertedWith("Amount must be greater than 0")
-        //     await expect(yfUSDTContract.withdrawVault(vaultShares)).to.be.revertedWith("Insufficient Balances")
-        // })
-
-        // it("should approve Yearn Earn and Vault contract to deposit USDT from yfUSDT contract", async () => {
-        //     // This function only execute one time and already execute while yfUSDT contract deployed.
-        //     // User should ignore this function.
-
-        //     // Get address of owner and deploy the contract
+        // it("should deduct correct fees from deposit amount based on tier", async () => {
+        //     // Get signer and address of sender and deploy the contract
         //     const [senderSigner, _] = await ethers.getSigners()
+        //     const senderAddress = await senderSigner.getAddress()
         //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
         //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        //     // Check if Yearn Earn and Vault contract can deposit a huge amount of USDT from yfUSDT contract
+        //     await yfUSDTContract.deployed()
+        //     // Check deduct deposit fee correctly in tier 1
         //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
-        //     await token.approve(yfUSDTContract.address, 500000000000000)
-        //     await expect(yfUSDTContract.deposit(250000000000000, 250000000000000)).not.to.be.reverted
+        //     await token.approve(yfUSDTContract.address, 10000000000)
+        //     let earnDepositBalance, vaultDepositBalance
+        //     await yfUSDTContract.deposit(100, 200)
+        //     // Deposit fee for amount < 10000 is 1% in tier 1 by default
+        //     earnDepositBalance = 100 - (100 * 1 / 100)
+        //     vaultDepositBalance = 200 - (200 * 1 / 100)
+        //     expect(await yfUSDTContract.earnDepositBalanceOf(senderAddress)).to.equal(earnDepositBalance)
+        //     expect(await yfUSDTContract.vaultDepositBalanceOf(senderAddress)).to.equal(vaultDepositBalance)
+        //     // Check deduct deposit fee correctly in tier 2
+        //     await yfUSDTContract.deposit(10000, 20000)
+        //     // Deposit fee for amount > 10000 and amount <= 100000 is 0.5% in tier 2 by default
+        //     earnDepositBalance = earnDepositBalance + (10000 - (10000 * 0.5 / 100))
+        //     vaultDepositBalance = vaultDepositBalance + (20000 - (20000 * 0.5 / 100))
+        //     expect(await yfUSDTContract.earnDepositBalanceOf(senderAddress)).to.equal(earnDepositBalance)
+        //     expect(await yfUSDTContract.vaultDepositBalanceOf(senderAddress)).to.equal(vaultDepositBalance)
+        //     // Check deduct deposit fee correctly in tier 3
+        //     await yfUSDTContract.deposit(100000, 200000)
+        //     // Deposit fee for amount > 100000 is 0.25% in tier 3 by default
+        //     earnDepositBalance = earnDepositBalance + (100000 - (100000 * 0.25 / 100))
+        //     vaultDepositBalance = vaultDepositBalance + (200000 - (200000 * 0.25 / 100))
+        //     expect(await yfUSDTContract.earnDepositBalanceOf(senderAddress)).to.equal(earnDepositBalance)
+        //     expect(await yfUSDTContract.vaultDepositBalanceOf(senderAddress)).to.equal(vaultDepositBalance)
         // })
+
+        it("should withdraw earn and vault correctly", async () => {
+            // Get signer and address of sender and deploy the contract
+            const [senderSigner, clientSigner, _] = await ethers.getSigners()
+            const senderAddress = await senderSigner.getAddress()
+            const clientAddress = await clientSigner.getAddress()
+            const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+            await yfUSDTContract.deployed()
+            // Transfer some USDT to client
+            const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+            await token.transfer(clientAddress, 1000)
+            // Deposit some USDT into Yearn Farmer contract
+            await token.connect(clientSigner).approve(yfUSDTContract.address, 1000)
+            await yfUSDTContract.connect(clientSigner).deposit(100, 200)
+            // Withdraw partial token from Yearn Earn in Yearn Farmer contract
+            // Check if withdraw amount meet the function requirements
+            await expect(yfUSDTContract.connect(clientSigner).withdrawEarn(0)).to.be.revertedWith("Amount must be greater than 0")
+            await expect(yfUSDTContract.connect(clientSigner).withdrawEarn(1000)).to.be.revertedWith("Insufficient Balances")
+            // Get earn and vault shares amout (withdraw function use this as parameter)
+            const earnShares = await yfUSDTContract.earnBalanceOf(clientAddress)
+            const vaultShares = await yfUSDTContract.vaultBalanceOf(clientAddress)
+            // Convert profit into USDT off-chain
+            const earnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, senderSigner)
+            let offChainWithdrawTokenAmount
+            offChainWithdrawTokenAmount = ((await earnContract.calcPoolValueInToken()).mul(earnShares.sub(50))).div(await earnContract.totalSupply())
+            // Execute withdraw function for Yearn Earn
+            let clientTokenAmountBeforeWithdraw, clientTokenAmountAfterWithdraw
+            clientTokenAmountBeforeWithdraw = await token.balanceOf(clientAddress)
+            await yfUSDTContract.connect(clientSigner).withdrawEarn(earnShares.sub(50))
+            // Check if USDT amount that transfer back to client correctly 
+            clientTokenAmountAfterWithdraw = await token.balanceOf(clientAddress)
+            expect(offChainWithdrawTokenAmount).to.equal(clientTokenAmountAfterWithdraw.sub(clientTokenAmountBeforeWithdraw))
+            // Check if daoUSDT balance of client correctly after burned (earnShares amount of token burned, left vaultShares of amount)
+            expect(await yfUSDTContract.balanceOf(clientAddress)).to.equal(vaultShares.add(50))
+            // Check if return amount of function earnBalanceOf and earnDepositBalanceOf correct
+        })
 
         // it("should able to return shares and deposit amount correctly", async () => {
         //     // Get address of owner and deploy the contract
@@ -254,6 +248,20 @@ describe("yfUSDT", () => {
         //     // Check if balance shares of Yearn Earn contract and Yearn Vault contract return correctly
         //     expect(await yfUSDTContract.earnBalanceOf(senderAddress)).to.equal(earnShares)
         //     expect(await yfUSDTContract.vaultBalanceOf(senderAddress)).to.equal(vaultShares)
+        // })
+
+        // it("should approve Yearn Earn and Vault contract to deposit USDT from yfUSDT contract", async () => {
+        //     // This function only execute one time and already execute while yfUSDT contract deployed.
+        //     // User should ignore this function.
+
+        //     // Get address of owner and deploy the contract
+        //     const [senderSigner, _] = await ethers.getSigners()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     // Check if Yearn Earn and Vault contract can deposit a huge amount of USDT from yfUSDT contract
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     await token.approve(yfUSDTContract.address, 500000000000000)
+        //     await expect(yfUSDTContract.deposit(250000000000000, 250000000000000)).not.to.be.reverted
         // })
     })
 
