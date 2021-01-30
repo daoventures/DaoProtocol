@@ -1,18 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-interface YfUSDT {
+interface YfContract {
     function deposit(uint256 earnAmount, uint256 vaultAmount) external;
 }
 
-contract SampleContract {
-    YfUSDT yfUSDT;
+interface IERC20 {
+    function approve(address spender, uint256 amount) external;
+}
 
-    constructor(address _yfUSDTAddress) {
-        yfUSDT = YfUSDT(_yfUSDTAddress);
+/**
+ * @notice This is a sample contract to test deposit token to Yearn Farmer contract
+ * By default the deposit transaction will be reverted
+ */
+contract SampleContract {
+    YfContract yfContract;
+    IERC20 token;
+
+    constructor(address _yfUSDTAddress, address _tokenAddress) {
+        yfContract = YfContract(_yfUSDTAddress);
+        token = IERC20(_tokenAddress);
+    }
+
+    function approve() external {
+        token.approve(address(yfContract), 1000);
     }
 
     function deposit() external {
-        yfUSDT.deposit(100, 200);
+        yfContract.deposit(100, 200);
     }
 }
