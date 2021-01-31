@@ -382,6 +382,55 @@ describe("yfUSDT", () => {
         //     expect(await yfUSDTContract.vaultBalanceOf(senderAddress)).to.equal(vaultShares)
         // })
 
+        // it("should able to refund token when this contract is in vesting state", async () => {
+        //     // Get address of owner and deploy the contract
+        //     const [senderSigner, clientSigner, _] = await ethers.getSigners()
+        //     const clientAddress = await clientSigner.getAddress()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+        //     // Transfer some token to client
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     await token.transfer(clientAddress, 1000)
+        //     // Deposit 100 to Yearn Earn contract and 200 to Yearn Vault contract
+        //     await token.connect(clientSigner).approve(yfUSDTContract.address, 1000)
+        //     await yfUSDTContract.connect(clientSigner).deposit(100, 200)
+        //     // Check transaction will failed if this contract is not in vesting state
+        //     await expect(yfUSDTContract.connect(clientSigner).refundEarn()).to.be.revertedWith("The funds must be vested before refund")
+        //     // Get client token balance before refund, earn and vault shares amount
+        //     const tokenBalanceBeforeRefund = await token.balanceOf(clientAddress)
+        //     const earnShares = await yfUSDTContract.earnBalanceOf(clientAddress)
+        //     const vaultShares = await yfUSDTContract.vaultBalanceOf(clientAddress)
+        //     // Execute vesting function
+        //     await yfUSDTContract.vesting()
+        //     // Check transaction will fail if someone that doesn't deposit into this contract call this function
+        //     await expect(yfUSDTContract.refundEarn()).to.be.revertedWith("Nothing to refund")
+        //     // Get off-chain earn deposit by shares
+        //     const earnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, senderSigner)
+        //     let offChainDepositByShares = earnShares.div(await earnContract.calcPoolValueInToken()).mul(await yfUSDTContract.earnPrice())
+        //     // Execute earn refund function
+        //     await yfUSDTContract.connect(clientSigner).refundEarn()
+        //     // Check if token refund correctly to client address
+        //     const tokenBalanceAfterRefund = await token.balanceOf(clientAddress)
+        //     let tokenBalanceRefund = tokenBalanceAfterRefund.sub(tokenBalanceBeforeRefund)
+        //     expect(tokenBalanceRefund).to.equal(offChainDepositByShares)
+        //     // Check if function to check earn shares return correctly (should be 0)
+        //     expect(await yfUSDTContract.earnBalanceOf(clientAddress)).to.equal(0)
+        //     // Get off-chain vault deposit by shares
+        //     const vaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, senderSigner)
+        //     offChainDepositByShares = vaultShares.div(await vaultContract.balance()).mul(await yfUSDTContract.vaultPrice())
+        //     // Execute vault refund function
+        //     await yfUSDTContract.connect(clientSigner).refundVault()
+        //     // Check if token refund correctly to client address
+        //     tokenBalanceRefund = (await token.balanceOf(clientAddress)).sub(tokenBalanceBeforeRefund)
+        //     expect(tokenBalanceRefund).to.equal(offChainDepositByShares)
+        //     // Check if function to check vault shares return correctly (should be 0)
+        //     expect(await yfUSDTContract.vaultBalanceOf(clientAddress)).to.equal(0)
+        // })
+
+        // it("should able to refund token with profit when this contract is in vesting state", async () => {
+        //     // TO DO
+        // })
+
         // it("should approve Yearn Earn and Vault contract to deposit USDT from yfUSDT contract", async () => {
         //     // This function only execute one time and already execute while yfUSDT contract deployed.
         //     // User should ignore this function.
@@ -573,52 +622,79 @@ describe("yfUSDT", () => {
         //         .withArgs(newYVaultContractAddress, yVaultAddress) // [old Yearn Vault contract Address, new Yearn Vault contract Address]
         // })
 
-        // it("should send deposit fee and profile sharing fee to treasury wallet correctly", async () => {
-        //     const [accountSigner, _] = await ethers.getSigners()
-        //     const accountSignerAddress = await accountSigner.getAddress()
-
-        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", accountSigner)
+        // it("should set contract in vesting state correctly", async () => {
+        //     // Get signer of sender, malicious account and new Yearn Vault contract and deploy the contract
+        //     const [senderSigner, maliciousSigner, _] = await ethers.getSigners()
+        //     const senderAddress = await senderSigner.getAddress()
+        //     const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
         //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
         //     await yfUSDTContract.deployed()
-
-        //     const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, accountSigner)
-
-        //     // Clear out all token in treasury wallet
-        //     await hre.network.provider.request({
-        //         method: "hardhat_impersonateAccount",
-        //         params: [treasuryWalletAddress]
-        //     })
-        //     const treasuryWalletSigner = await ethers.provider.getSigner(treasuryWalletAddress)
-        //     await tokenContract.connect(treasuryWalletSigner).transfer(yfUSDTContract.address, await tokenContract.balanceOf(treasuryWalletAddress))
-
-        //     // Deposit into Yearn Farmer contract
-        //     tx = await tokenContract.approve(yfUSDTContract.address, 1000000)
-        //     tx.wait()
-        //     let earnDepositAmount = 100 // Also test with 10000, 100000
-        //     let vaultDepositAmount = 200 // Also test with 20000, 200000
-        //     await yfUSDTContract.deposit(earnDepositAmount, vaultDepositAmount)
-
-        //     let earnDepositFee, vaultDepositFee, depositFee
-        //     balance = await yfUSDTContract.earnDepositBalanceOf(accountSignerAddress)
-        //     earnDepositFee = earnDepositAmount - balance
-        //     balance = await yfUSDTContract.vaultDepositBalanceOf(accountSignerAddress)
-        //     vaultDepositFee = vaultDepositAmount - balance
-        //     depositFee = earnDepositFee + vaultDepositFee
-        //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
-
-        //     // Withdraw from Yearn Farmer Contract
-        //     let profileSharingFee
-        //     await yfUSDTContract.withdrawEarn(await yfUSDTContract.earnBalanceOf(accountSignerAddress))
-        //     profileSharingFee = 0
-        //     // profileSharingFee = 100 * 0.1 // 10%
-        //     depositFee += profileSharingFee
-        //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
-
-        //     await yfUSDTContract.withdrawVault(await yfUSDTContract.vaultBalanceOf(accountSignerAddress))
-        //     profileSharingFee = 0
-        //     // profileSharingFee = 200 * 0.1 // 10%
-        //     depositFee += profileSharingFee
-        //     expect(await tokenContract.balanceOf(treasuryWalletAddress)).to.equal(depositFee)
+        //     // Deposit some USDT to Yearn Earn and Vault contract
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     await token.approve(yfUSDTContract.address, 1000)
+        //     await yfUSDTContract.deposit(100, 200)
+        //     const earnShares = await yfUSDTContract.earnBalanceOf(senderAddress)
+        //     const vaultShares = await yfUSDTContract.vaultBalanceOf(senderAddress)
+        //     await yfUSDTContract.deposit(100, 200)
+        //     // Check if earnPool is total of earnShares
+        //     const earnPool = await yfUSDTContract.earnPool()
+        //     expect(earnPool).to.equal(earnShares.mul(2))
+        //     // Check if vaultPool is total of vaultShares
+        //     const vaultPool = await yfUSDTContract.vaultPool()
+        //     expect(vaultPool).to.equal(vaultShares.mul(2))
+        //     // Check if only contract owner can execute the function
+        //     await expect(yfUSDTContract.connect(maliciousSigner).vesting())
+        //         .to.be.revertedWith("caller is not the owner")
+        //     // Execute the function
+        //     await yfUSDTContract.vesting()
+        //     // Check if vasting state is true after execute the function
+        //     expect(await yfUSDTContract.isVesting()).is.true
+        //     // Get off-chain earn price
+        //     const earnContract = new ethers.Contract(yEarnAddress, IYearn_ABI, senderSigner)
+        //     const offChainEarnPrice = ((await earnContract.calcPoolValueInToken()).mul(earnPool)).div(await earnContract.totalSupply())
+        //     // Check if earn price is correct
+        //     expect(await yfUSDTContract.earnPrice()).to.equal(offChainEarnPrice)
+        //     // Check if earnPool is clear after vesting
+        //     expect(await yfUSDTContract.earnPool()).to.equal(0)
+        //     // Get off-chain vault price
+        //     const vaultContract = new ethers.Contract(yVaultAddress, IYvault_ABI, senderSigner)
+        //     const offChainVaultPrice = ((await vaultContract.balance()).mul(vaultPool)).div(await vaultContract.totalSupply())
+        //     // Check if vault price is correct
+        //     expect(await yfUSDTContract.vaultPrice()).to.equal(offChainVaultPrice)
+        //     // Check if vaultPool is clear after vesting
+        //     expect(await yfUSDTContract.vaultPool()).to.equal(0)
+        //     // Check if unlock date is set to 1 day (1*24*60*60=86400 seconds)
+        //     // It is not possible to have equal time, so we just test if unlock time is greater than 86400-60 seconds
+        //     expect(parseInt(await yfUSDTContract.unlockDate())).to.greaterThan((Date.now() / 1000) + 86340)
+        //     // Check if meet the function requirements (contract not in vasting state)
+        //     await expect(yfUSDTContract.vesting()).to.be.revertedWith("The funds are collected")
         // })
+
+        it("should revert this contract after execute revert contract function", async () => {
+            // Get address of owner and deploy the contract
+            const [senderSigner, clientSigner, _] = await ethers.getSigners()
+            const clientAddress = await clientSigner.getAddress()
+            const YfUSDTContract = await ethers.getContractFactory("yfUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
+            // Transfer some token to client
+            const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+            await token.transfer(clientAddress, 1000)
+            // Deposit 100 to Yearn Earn contract and 200 to Yearn Vault contract
+            await token.connect(clientSigner).approve(yfUSDTContract.address, 1000)
+            await yfUSDTContract.connect(clientSigner).deposit(100, 200)
+            // Check transaction will failed if this contract is not in vesting state
+            await expect(yfUSDTContract.revertContract()).to.be.revertedWith("It only can be reverted when the funds are vested")
+            // Execute vesting function
+            await yfUSDTContract.vesting()
+            // Check transaction will failed if execute revert contract function within 24 hours after execute vesting function 
+            await expect(yfUSDTContract.revertContract()).to.be.revertedWith("Revert contract only can be made after 24 hours of vesting")
+            await network.provider.send("evm_increaseTime", [86400])
+            await yfUSDTContract.revertContract()
+            // console.log((await yfUSDTContract.earnBalanceOf(clientAddress)).toString())
+            // console.log((await yfUSDTContract.earnDepositBalanceOf(clientAddress)).toString())
+            // await yfUSDTContract.connect(clientSigner).withdrawEarn(94)
+            await yfUSDTContract.connect(clientSigner).refundEarn()
+        })
+
     })
 })
