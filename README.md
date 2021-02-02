@@ -1,6 +1,6 @@
 # Yearn Farmer
 
-Yearn Farmer is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault (USDT).
+Yearn Farmer is a set of Ethereum Smart Contracts focused on creating a simple way to invest in Yearn Protocol in yEarn and yVault (USDT, DAI, USDC, TUSD).
 
 Mainnet Etherscan: https://etherscan.io/address/0xA0db955B5bdFA7C279CdE6C136FBA20C195CdEe5
 
