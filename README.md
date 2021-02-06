@@ -4,6 +4,8 @@ Yearn Farmer is a set of Ethereum Smart Contracts focused on creating a simple w
 
 Mainnet Etherscan: https://etherscan.io/address/0xA0db955B5bdFA7C279CdE6C136FBA20C195CdEe5
 
+#### The smart contract is still under development (testing and auditing) and we strongly advise anyone not to deposit anything on the mainnet until we publicly launch the product.
+
 ## Installations
 
 To run this project locally you need to deploy USDT, yEarn, yVault and this repo, Yearn-Farmer. 
