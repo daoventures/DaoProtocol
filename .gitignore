@@ -3,3 +3,5 @@ node_modules
 artifacts
 cache
 frontend
+test/test.js
+materials
