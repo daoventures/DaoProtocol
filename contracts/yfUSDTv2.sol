@@ -27,34 +27,34 @@ contract yfUSDTv2 is ERC20, Ownable {
 
   using SafeERC20 for IERC20;
   using Address for address;
-  using SafeMath for uint;
+  using SafeMath for uint256;
 
   IERC20 public token;
   IYearn public earn;
   IYvault public vault;
-  uint public constant MAX_UNIT = 2**256 - 2;
-  mapping (address => uint) private earnDepositAmount;
-  mapping (address => uint) private vaultDepositAmount;
-  uint public pool;
+  uint256 public constant MAX_UNIT = 2**256 - 2;
+  mapping (address => uint256) private earnDepositBalance;
+  mapping (address => uint256) private vaultDepositBalance;
+  uint256 public pool;
 
   address public treasuryWallet; // Address that collecting fees
 
-  uint[] public depositFeeTier2 = [10001, 100000]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
-  uint[] public depositFeePercentage = [100, 50, 25]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.5%, 0.25%]
-  uint public profileSharingFeePercentage = 10;
+  uint256[] public depositFeeTier2 = [10001, 100000]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
+  uint256[] public depositFeePercentage = [100, 50, 25]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.5%, 0.25%]
+  uint256 public profileSharingFeePercentage = 10;
 
   bool public isVesting = false;
 
   // Timelock related variable
   enum Functions { WALLET, FEETIER, D_FEEPERC, W_FEEPERC, VEST, MIGRATE }
-  uint private constant _TIMELOCK = 1 days;
-  mapping(Functions => uint) public timelock;
+  uint256 private constant _TIMELOCK = 1 days;
+  mapping(Functions => uint256) public timelock;
   address public newStrategy;
 
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
-  event SetDepositFeeTier2(uint[] oldDepositFeeTier2, uint[] newDepositFeeTier2);
-  event SetDepositFeePercentage(uint[] oldDepositFeePercentage, uint[] newDepositFeePercentage);
-  event SetProfileSharingFeePercentage(uint indexed oldProfileSharingFeePercentage, uint indexed newProfileSharingFeePercentage);
+  event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
+  event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
+  event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
   constructor(address _earn, address _vault, address _treasuryWallet) 
     ERC20("DAO Tether USDT", "daoUSDT") { // ********** This need to be change and create new .sol file for DAI, USDC and TUSD **********
@@ -117,7 +117,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - First element in array must greater than 0
    * - Second element must greater than first element
    */
-  function setDepositFeeTier2(uint[] calldata _depositFeeTier2) external onlyOwner notLocked(Functions.FEETIER) {
+  function setDepositFeeTier2(uint256[] calldata _depositFeeTier2) external onlyOwner notLocked(Functions.FEETIER) {
     require(_depositFeeTier2[0] != 0, "Minimun amount cannot be 0");
     require(_depositFeeTier2[1] > _depositFeeTier2[0], "Maximun amount must greater than minimun amount");
     /**
@@ -139,7 +139,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - This contract is not locked
    * - Each of the element in the array must less than 4000 (40%) 
    */
-  function setDepositFeePercentage(uint[] calldata _depositFeePercentage) external onlyOwner notLocked(Functions.D_FEEPERC) {
+  function setDepositFeePercentage(uint256[] calldata _depositFeePercentage) external onlyOwner notLocked(Functions.D_FEEPERC) {
     /** 
      * _depositFeePercentage content a array of 3 element, representing deposit fee of tier 1, tier 2 and tier 3
      * For example depositFeePercentage is [100, 50, 25]
@@ -163,7 +163,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - This contract is not locked
    * - Amount set must less than 40 (40%)
    */
-  function setProfileSharingFeePercentage(uint _percentage) public onlyOwner notLocked(Functions.W_FEEPERC) {
+  function setProfileSharingFeePercentage(uint256 _percentage) public onlyOwner notLocked(Functions.W_FEEPERC) {
     require(_percentage < 40, "Profile sharing fee percentage cannot be more than 40%");
     emit SetProfileSharingFeePercentage(profileSharingFeePercentage, _percentage);
     profileSharingFeePercentage = _percentage;
@@ -176,13 +176,13 @@ contract yfUSDTv2 is ERC20, Ownable {
    */
   function approvePooling() public {
     // Allow Yearn Earn contract to transfer USDT from this contract
-    uint earnAllowance = token.allowance(address(this), address(earn));
-    if (earnAllowance == uint(0)) {
+    uint256 earnAllowance = token.allowance(address(this), address(earn));
+    if (earnAllowance == uint256(0)) {
       token.safeApprove(address(earn), MAX_UNIT);
     }
     // Allow Yearn Vault contract to transfer USDT from this contract
-    uint vaultAllowance = token.allowance(address(this), address(vault));
-    if (vaultAllowance == uint(0)) {
+    uint256 vaultAllowance = token.allowance(address(this), address(vault));
+    if (vaultAllowance == uint256(0)) {
       token.safeApprove(address(vault), MAX_UNIT);
     }
   }
@@ -194,11 +194,11 @@ contract yfUSDTv2 is ERC20, Ownable {
    * Requirements:
    * - This contract is not in vesting state
    */
-  function getEarnDepositAmount(address _address) external view returns (uint) {
+  function getEarnDepositBalance(address _address) external view returns (uint256) {
     if (isVesting == true) {
       return 0;
     } else {
-      return earnDepositAmount[_address];
+      return earnDepositBalance[_address];
     }
   }
 
@@ -209,11 +209,11 @@ contract yfUSDTv2 is ERC20, Ownable {
    * Requirements:
    * - This contract is not in vesting state
    */
-  function getVaultDepositAmount(address _address) external view returns (uint) {
+  function getVaultDepositBalance(address _address) external view returns (uint256) {
     if (isVesting == true) {
       return 0;
     } else {
-      return vaultDepositAmount[_address];
+      return vaultDepositBalance[_address];
     }
   }
 
@@ -228,14 +228,17 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - This contract is not in vesting state
    * - Either earn deposit or vault deposit must greater than 0
    */
-  function deposit(uint earnAmount, uint vaultAmount) public {
+  function deposit(uint256 earnAmount, uint256 vaultAmount) public {
     require(address(msg.sender).isContract() == false, "Caller is a contract not EOA");
     require(isVesting == false, "Contract in vesting state");
-    require(earnAmount > 0 || vaultAmount > 0, "Deposit Amount must be greater than 0");
+    require(earnAmount > 0 || vaultAmount > 0, "Amount must > 0");
     
-    uint depositAmount = earnAmount.add(vaultAmount);
+    uint256 depositAmount = earnAmount.add(vaultAmount);
     token.safeTransferFrom(msg.sender, address(this), depositAmount);
 
+    uint256 earnDepositFee = 0;
+    uint256 vaultDepositFee = 0;
+    uint256 _depositFeePercentage = 0;
     /**
      * v2: Deposit fees
      * depositFeeTier2 is used to set each tier minimun and maximun
@@ -249,55 +252,35 @@ contract yfUSDTv2 is ERC20, Ownable {
      * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.5%, Tier 3 = 0.25%
      */
     if (depositAmount < depositFeeTier2[0]) {
-      // Tier 1
-      earnAmount = earnAmount.sub(earnAmount.mul(depositFeePercentage[0]).div(10000));
-      vaultAmount = vaultAmount.sub(vaultAmount.mul(depositFeePercentage[0]).div(10000));
-      uint totalDepositFee = depositAmount.mul(depositFeePercentage[0]).div(10000);
-      token.safeTransfer(treasuryWallet, totalDepositFee);
+    // Tier 1
+      _depositFeePercentage = depositFeePercentage[0];
     } else if (depositAmount >= depositFeeTier2[0] && depositAmount <= depositFeeTier2[1]) {
-      // Tier 2
-      earnAmount = earnAmount.sub(earnAmount.mul(depositFeePercentage[1]).div(10000));
-      vaultAmount = vaultAmount.sub(vaultAmount.mul(depositFeePercentage[1]).div(10000));
-      uint totalDepositFee = depositAmount.mul(depositFeePercentage[1]).div(10000);
-      token.safeTransfer(treasuryWallet, totalDepositFee);
+    // Tier 2
+      _depositFeePercentage = depositFeePercentage[1];
     } else {
-      // Tier 3
-      earnAmount = earnAmount.sub(earnAmount.mul(depositFeePercentage[2]).div(10000));
-      vaultAmount = vaultAmount.sub(vaultAmount.mul(depositFeePercentage[2]).div(10000));
-      uint totalDepositFee = depositAmount.mul(depositFeePercentage[2]).div(10000);
-      token.safeTransfer(treasuryWallet, totalDepositFee);
+    // Tier 3
+      _depositFeePercentage = depositFeePercentage[2];
     }
 
-    // Deposit to Yearn Earn
+    // Deposit to Yearn Earn after fee
     if (earnAmount > 0) {
-      uint earnPool = earn.calcPoolValueInToken();
-      uint earnShares = 0;
-      if (earnPool == 0) {
-        earnShares = earnAmount;
-      } else {
-        earnShares = (earnAmount.mul(earn.totalSupply())).div(earnPool);
-      }
-
+      earnDepositFee = earnAmount.mul(_depositFeePercentage).div(10000);
+      earnAmount = earnAmount.sub(earnDepositFee);
       earn.deposit(earnAmount);
-      earnDepositAmount[msg.sender] = earnDepositAmount[msg.sender].add(earnAmount);
+      earnDepositBalance[msg.sender] = earnDepositBalance[msg.sender].add(earnAmount);
     }
 
-    // Deposit to Yearn Vault
+    // Deposit to Yearn Vault after fee
     if (vaultAmount > 0) {
-      uint vaultPool = vault.balance();
-      uint vaultShares = 0;
-      if (vaultPool == 0) {
-        vaultShares = vaultAmount;
-      } else {
-        vaultShares = (vaultAmount.mul(vault.totalSupply())).div(vaultPool);
-      }
-
+      vaultDepositFee = vaultAmount.mul(_depositFeePercentage).div(10000);
+      vaultAmount = vaultAmount.sub(vaultDepositFee);
       vault.deposit(vaultAmount);
-      vaultDepositAmount[msg.sender] = vaultDepositAmount[msg.sender].add(vaultAmount);
+      vaultDepositBalance[msg.sender] = vaultDepositBalance[msg.sender].add(vaultAmount);
     }
+    token.safeTransfer(treasuryWallet, earnDepositFee.add(vaultDepositFee));
 
     // Mint daoUSDT to sender
-    uint shares = 0;
+    uint256 shares = 0;
     if (totalSupply() == 0) {
       shares = earnAmount.add(vaultAmount);
     } else {
@@ -317,25 +300,25 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - Amount input must greater than 0
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
-  function withdrawEarn(uint amount) public {
+  function withdrawEarn(uint256 amount) public {
     require(isVesting == false, "Contract in vesting state");
     require(amount > 0, "Amount must > 0");
-    require(earnDepositAmount[msg.sender] >= amount, "Insufficient balance");
+    require(earnDepositBalance[msg.sender] >= amount, "Insufficient balance");
 
-    uint earnShares = (amount.mul(earn.totalSupply())).div(earn.calcPoolValueInToken()); // Find earn shares based on deposit amount 
-    uint r = (earn.calcPoolValueInToken().mul(earnShares)).div(earn.totalSupply()); // Actual earn withdraw amount
-    // uint r = 200; // For testing purpose, need to be removed on production
+    uint256 earnShares = (amount.mul(earn.totalSupply())).div(earn.calcPoolValueInToken()); // Find earn shares based on deposit amount 
+    uint256 r = ((earn.calcPoolValueInToken()).mul(earnShares)).div(earn.totalSupply()); // Actual earn withdraw amount
+    // uint256 r = 200; // For testing purpose, need to be removed on production
 
     earn.withdraw(earnShares);
-    earnDepositAmount[msg.sender] = earnDepositAmount[msg.sender].sub(amount);
+    earnDepositBalance[msg.sender] = earnDepositBalance[msg.sender].sub(amount);
     
-    uint shares = amount.mul(totalSupply()).div(pool); // Find contract shares based on deposit amount
+    uint256 shares = amount.mul(totalSupply()).div(pool); // Find contract shares based on deposit amount
     _burn(msg.sender, shares);
     pool = pool.sub(amount);
 
     if (r > amount) {
-      uint p = r.sub(amount); // Profit
-      uint fees = p.mul(profileSharingFeePercentage).div(100);
+      uint256 p = r.sub(amount); // Profit
+      uint256 fees = p.mul(profileSharingFeePercentage).div(100);
       token.safeTransfer(msg.sender, r.sub(fees));
       token.safeTransfer(treasuryWallet, fees);
     } else {
@@ -353,25 +336,25 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - Amount input must greater than 0
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
-  function withdrawVault(uint amount) public {
+  function withdrawVault(uint256 amount) public {
     require(isVesting == false, "Contract in vesting state");
     require(amount > 0, "Amount must be > 0");
-    require(vaultDepositAmount[msg.sender] >= amount, "Insufficient balance");
+    require(vaultDepositBalance[msg.sender] >= amount, "Insufficient balance");
     
-    uint vaultShares = (amount.mul(vault.totalSupply())).div(vault.balance()); // Find vault shares based on deposit amount 
-    uint r = (vault.balance().mul(vaultShares)).div(vault.totalSupply()); // Actual vault withdraw amount
-    // uint r = 200; // For testing purpose, need to be removed on production
+    uint256 vaultShares = (amount.mul(vault.totalSupply())).div(vault.balance()); // Find vault shares based on deposit amount 
+    uint256 r = ((vault.balance()).mul(vaultShares)).div(vault.totalSupply()); // Actual vault withdraw amount
+    // uint256 r = 400; // For testing purpose, need to be removed on production
 
     vault.withdraw(vaultShares);
-    vaultDepositAmount[msg.sender] = vaultDepositAmount[msg.sender].sub(amount);
+    vaultDepositBalance[msg.sender] = vaultDepositBalance[msg.sender].sub(amount);
     
-    uint shares = amount.mul(totalSupply()).div(pool);
+    uint256 shares = amount.mul(totalSupply()).div(pool);
     _burn(msg.sender, shares);
     pool = pool.sub(amount);
 
     if (r > amount) {
-      uint p = r.sub(amount); // Profit
-      uint fees = p.mul(profileSharingFeePercentage).div(100);
+      uint256 p = r.sub(amount); // Profit
+      uint256 fees = p.mul(profileSharingFeePercentage).div(100);
       token.safeTransfer(msg.sender, r.sub(fees));
       token.safeTransfer(treasuryWallet, fees);
     } else {
@@ -398,8 +381,8 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     // Collect all profit
     if (token.balanceOf(address(this)) > pool) {
-      uint profit = token.balanceOf(address(this)).sub(pool);
-      uint fees = profit.mul(profileSharingFeePercentage).div(100);
+      uint256 profit = token.balanceOf(address(this)).sub(pool);
+      uint256 fees = profit.mul(profileSharingFeePercentage).div(100);
       token.safeTransfer(treasuryWallet, fees);
     }
     pool = 0;
@@ -410,11 +393,11 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @param _address Address of account to check
    * @return Token amount based on on daoUSDT hold by account. 0 if contract is not in vesting state
    */
-  function getSharesValue(address _address) external view returns (uint) {
+  function getSharesValue(address _address) external view returns (uint256) {
     if (isVesting == false) {
       return 0;
     } else {
-      uint shares = balanceOf(_address);
+      uint256 shares = balanceOf(_address);
       return token.balanceOf(address(this)).mul(shares).div(totalSupply());
     }
   }
@@ -430,8 +413,8 @@ contract yfUSDTv2 is ERC20, Ownable {
     require(isVesting == true, "Not in vesting state");
     require(balanceOf(address(msg.sender)) > 0, "No balance to refund");
 
-    uint shares = balanceOf(msg.sender);
-    uint refundAmount = token.balanceOf(address(this)).mul(shares).div(totalSupply());
+    uint256 shares = balanceOf(msg.sender);
+    uint256 refundAmount = token.balanceOf(address(this)).mul(shares).div(totalSupply());
     token.safeTransfer(msg.sender, refundAmount);
     _burn(msg.sender, shares);
   }
