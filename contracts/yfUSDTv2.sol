@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 /// @title OpenZeppelin libraries
@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @dev Interface of Yearn Finance Earn and Vault contract
 import "../interfaces/IYearn.sol";
@@ -16,6 +15,11 @@ import "../interfaces/IYvault.sol";
 
 // For debugging use, will be removed in production
 import "hardhat/console.sol";
+
+interface IDaoVault {
+  function totalSupply() external view returns (uint256);
+  function balanceOf(address _address) external view returns (uint256); 
+}
 
 /// @title Contract for utilize USDT in Yearn Finance contract
 contract yfUSDTv2 is ERC20, Ownable {
@@ -44,6 +48,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   uint256 public profileSharingFeePercentage = 10;
 
   bool public isVesting = false;
+  IDaoVault public daoVault;
 
   // Timelock related variable
   enum Functions { WALLET, FEETIER, D_FEEPERC, W_FEEPERC, VEST, MIGRATE }
@@ -56,9 +61,8 @@ contract yfUSDTv2 is ERC20, Ownable {
   event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
-  constructor(address _earn, address _vault, address _treasuryWallet) 
-    ERC20("DAO Tether USDT", "daoUSDT") { // ********** This need to be change and create new .sol file for DAI, USDC and TUSD **********
-      _setupDecimals(6); // ********** This need to be change to 18 for yfDAI.sol and yfTUSD.sol **********
+  constructor(address _earn, address _vault, address _treasuryWallet)
+    ERC20("Yearn Farmer USDT", "yfUSDT") {
       token = IERC20(address(0xdAC17F958D2ee523a2206206994597C13D831ec7)); // ********** This need to be change to respective address for DAI, USDC and TUSD **********
 
       earn = IYearn(address(_earn));
@@ -75,7 +79,8 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @param _fn enum Functions
    */
   modifier notLocked(Functions _fn) {
-    require(timelock[_fn] != 0 && timelock[_fn] <= block.timestamp, "Function is locked");
+    require(timelock[_fn] != 0 && timelock[_fn] <= block.timestamp 
+      && timelock[_fn] + 1 days >= block.timestamp, "Function is locked");
     _;
   }
 
@@ -92,6 +97,12 @@ contract yfUSDTv2 is ERC20, Ownable {
     } else {
       timelock[_fn] = block.timestamp.add(_TIMELOCK);
     }
+  }
+
+  function setVault(address _address) external onlyOwner {
+    require(address(daoVault) == address(0), "Vault set");
+
+    daoVault = IDaoVault(_address);
   }
 
   /**
@@ -220,41 +231,42 @@ contract yfUSDTv2 is ERC20, Ownable {
   /**
    * @notice Deposit USDT into Yearn Earn and Vault contract
    * @notice Sender get daoUSDT token based on shares after deposit
-   * @param earnAmount amount of earn in deposit
-   * @param vaultAmount amount of vault in deposit
+   * @param _amounts amount of earn and vault to deposit
    * Requirements:
    * - Sender must approve this contract to transfer USDT from sender to this contract
    * - Sender must be an EOA account
    * - This contract is not in vesting state
    * - Either earn deposit or vault deposit must greater than 0
    */
-  function deposit(uint256 earnAmount, uint256 vaultAmount) public {
-    require(address(msg.sender).isContract() == false, "Caller is a contract not EOA");
+  function deposit(uint256[] memory _amounts) public {
     require(isVesting == false, "Contract in vesting state");
-    require(earnAmount > 0 || vaultAmount > 0, "Amount must > 0");
+    require(msg.sender == address(daoVault), "Only can call from Vault");
+    require(_amounts[0] > 0 || _amounts[1] > 0, "Amount must > 0");
     
-    uint256 depositAmount = earnAmount.add(vaultAmount);
-    token.safeTransferFrom(msg.sender, address(this), depositAmount);
+    uint256 _earnAmount = _amounts[0];
+    uint256 _vaultAmount = _amounts[1];
+    uint256 _depositAmount = _earnAmount.add(_vaultAmount);
+    token.safeTransferFrom(tx.origin, address(this), _depositAmount);
 
-    uint256 earnDepositFee = 0;
-    uint256 vaultDepositFee = 0;
+    uint256 _earnDepositFee = 0;
+    uint256 _vaultDepositFee = 0;
     uint256 _depositFeePercentage = 0;
     /**
      * v2: Deposit fees
      * depositFeeTier2 is used to set each tier minimun and maximun
      * For example depositFeeTier2 is [10000, 100000],
-     * Tier 1 = depositAmount < 10001
-     * Tier 2 = 10001 <= depositAmount <= 100000
-     * Tier 3 = depositAmount > 100000
+     * Tier 1 = _depositAmount < 10001
+     * Tier 2 = 10001 <= _depositAmount <= 100000
+     * Tier 3 = _depositAmount > 100000
      *
      * depositFeePercentage is used to set each tier deposit fee percentage
      * For example depositFeePercentage is [100, 50, 25]
      * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.5%, Tier 3 = 0.25%
      */
-    if (depositAmount < depositFeeTier2[0]) {
+    if (_depositAmount < depositFeeTier2[0]) {
     // Tier 1
       _depositFeePercentage = depositFeePercentage[0];
-    } else if (depositAmount >= depositFeeTier2[0] && depositAmount <= depositFeeTier2[1]) {
+    } else if (_depositAmount >= depositFeeTier2[0] && _depositAmount <= depositFeeTier2[1]) {
     // Tier 2
       _depositFeePercentage = depositFeePercentage[1];
     } else {
@@ -263,102 +275,107 @@ contract yfUSDTv2 is ERC20, Ownable {
     }
 
     // Deposit to Yearn Earn after fee
-    if (earnAmount > 0) {
-      earnDepositFee = earnAmount.mul(_depositFeePercentage).div(10000);
-      earnAmount = earnAmount.sub(earnDepositFee);
-      earn.deposit(earnAmount);
-      earnDepositBalance[msg.sender] = earnDepositBalance[msg.sender].add(earnAmount);
+    if (_earnAmount > 0) {
+      _earnDepositFee = _earnAmount.mul(_depositFeePercentage).div(10000);
+      _earnAmount = _earnAmount.sub(_earnDepositFee);
+      earn.deposit(_earnAmount);
+      earnDepositBalance[tx.origin] = earnDepositBalance[tx.origin].add(_earnAmount);
     }
 
     // Deposit to Yearn Vault after fee
-    if (vaultAmount > 0) {
-      vaultDepositFee = vaultAmount.mul(_depositFeePercentage).div(10000);
-      vaultAmount = vaultAmount.sub(vaultDepositFee);
-      vault.deposit(vaultAmount);
-      vaultDepositBalance[msg.sender] = vaultDepositBalance[msg.sender].add(vaultAmount);
+    if (_vaultAmount > 0) {
+      _vaultDepositFee = _vaultAmount.mul(_depositFeePercentage).div(10000);
+      _vaultAmount = _vaultAmount.sub(_vaultDepositFee);
+      vault.deposit(_vaultAmount);
+      vaultDepositBalance[tx.origin] = vaultDepositBalance[tx.origin].add(_vaultAmount);
     }
-    token.safeTransfer(treasuryWallet, earnDepositFee.add(vaultDepositFee));
+    token.safeTransfer(treasuryWallet, _earnDepositFee.add(_vaultDepositFee));
 
-    // Mint daoUSDT to sender
-    uint256 shares = 0;
+    uint256 _shares = 0;
     if (totalSupply() == 0) {
-      shares = earnAmount.add(vaultAmount);
+      _shares = _earnAmount.add(_vaultAmount);
     } else {
-      shares = (earnAmount.add(vaultAmount)).mul(totalSupply()).div(pool);
+      _shares = (_earnAmount.add(_vaultAmount)).mul(totalSupply()).div(pool);
     }
-    _mint(msg.sender, shares);
-    pool = pool.add(earnAmount.add(vaultAmount));
+    _mint(address(daoVault), _shares);
+    pool = pool.add(_earnAmount.add(_vaultAmount));
+  }
+
+  function withdraw(uint256[] memory _shares) external {
+    require(isVesting == false, "Contract in vesting state");
+    require(msg.sender == address(daoVault), "Only can call from Vault");
+
+    if (_shares[0] > 0) {
+      _withdrawEarn(_shares[0]);
+    }
+
+    if (_shares[1] > 0) {
+      _withdrawVault(_shares[1]);
+    }
   }
 
   /**
    * @notice Withdraw USDT from Yearn Earn contract
    * @notice Sender's daoUSDT token been burned based on amount withdraw
-   * @param amount Amount to withdraw
+   * @param _shares Amount of shares to withdraw
    * Requirements:
    * - Sender must be an EOA account
    * - Contract is not in vesting state
    * - Amount input must greater than 0
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
-  function withdrawEarn(uint256 amount) public {
-    require(isVesting == false, "Contract in vesting state");
-    require(amount > 0, "Amount must > 0");
-    require(earnDepositBalance[msg.sender] >= amount, "Insufficient balance");
+  function _withdrawEarn(uint256 _shares) private {
+    uint256 _d = pool.mul(_shares).div(daoVault.totalSupply()); // Initial Deposit Amount
+    require(earnDepositBalance[tx.origin] >= _d, "Insufficient balance");
+    uint256 _earnShares = (_d.mul(earn.totalSupply())).div(earn.calcPoolValueInToken()); // Find earn shares based on deposit amount 
+    uint256 _r = ((earn.calcPoolValueInToken()).mul(_earnShares)).div(earn.totalSupply()); // Actual earn withdraw amount
+    // uint256 _r = 200; // For testing purpose, need to be removed on production
 
-    uint256 earnShares = (amount.mul(earn.totalSupply())).div(earn.calcPoolValueInToken()); // Find earn shares based on deposit amount 
-    uint256 r = ((earn.calcPoolValueInToken()).mul(earnShares)).div(earn.totalSupply()); // Actual earn withdraw amount
-    // uint256 r = 200; // For testing purpose, need to be removed on production
-
-    earn.withdraw(earnShares);
-    earnDepositBalance[msg.sender] = earnDepositBalance[msg.sender].sub(amount);
+    earn.withdraw(_earnShares);
+    earnDepositBalance[tx.origin] = earnDepositBalance[tx.origin].sub(_d);
     
-    uint256 shares = amount.mul(totalSupply()).div(pool); // Find contract shares based on deposit amount
-    _burn(msg.sender, shares);
-    pool = pool.sub(amount);
+    _burn(address(daoVault), _shares);
+    pool = pool.sub(_d);
 
-    if (r > amount) {
-      uint256 p = r.sub(amount); // Profit
-      uint256 fees = p.mul(profileSharingFeePercentage).div(100);
-      token.safeTransfer(msg.sender, r.sub(fees));
-      token.safeTransfer(treasuryWallet, fees);
+    if (_r > _d) {
+      uint256 _p = _r.sub(_d); // Profit
+      uint256 _fees = _p.mul(profileSharingFeePercentage).div(100);
+      token.safeTransfer(tx.origin, _r.sub(_fees));
+      token.safeTransfer(treasuryWallet, _fees);
     } else {
-      token.safeTransfer(msg.sender, r);
+      token.safeTransfer(tx.origin, _r);
     }
   }
 
   /**
    * @notice Withdraw USDT from Yearn Vault contract
    * @notice Sender's daoUSDT token been burned based on amount withdraw
-   * @param amount Amount to withdraw
+   * @param _shares Amount of shares to withdraw
    * Requirements:
    * - Sender must be an EOA account
    * - Contract is not in vesting state
    * - Amount input must greater than 0
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
-  function withdrawVault(uint256 amount) public {
-    require(isVesting == false, "Contract in vesting state");
-    require(amount > 0, "Amount must be > 0");
-    require(vaultDepositBalance[msg.sender] >= amount, "Insufficient balance");
-    
-    uint256 vaultShares = (amount.mul(vault.totalSupply())).div(vault.balance()); // Find vault shares based on deposit amount 
-    uint256 r = ((vault.balance()).mul(vaultShares)).div(vault.totalSupply()); // Actual vault withdraw amount
+  function _withdrawVault(uint256 _shares) private {
+    uint256 _d = pool.mul(_shares).div(daoVault.totalSupply()); // Initial Deposit Amount
+    require(vaultDepositBalance[tx.origin] >= _d, "Insufficient balance");
+    uint256 _vaultShares = (_d.mul(vault.totalSupply())).div(vault.balance()); // Find vault shares based on deposit amount 
+    uint256 _r = ((vault.balance()).mul(_vaultShares)).div(vault.totalSupply()); // Actual vault withdraw amount
     // uint256 r = 400; // For testing purpose, need to be removed on production
 
-    vault.withdraw(vaultShares);
-    vaultDepositBalance[msg.sender] = vaultDepositBalance[msg.sender].sub(amount);
-    
-    uint256 shares = amount.mul(totalSupply()).div(pool);
-    _burn(msg.sender, shares);
-    pool = pool.sub(amount);
+    vault.withdraw(_vaultShares);
+    vaultDepositBalance[tx.origin] = vaultDepositBalance[tx.origin].sub(_d);
 
-    if (r > amount) {
-      uint256 p = r.sub(amount); // Profit
-      uint256 fees = p.mul(profileSharingFeePercentage).div(100);
-      token.safeTransfer(msg.sender, r.sub(fees));
-      token.safeTransfer(treasuryWallet, fees);
+    pool = pool.sub(_d);
+
+    if (_r > _d) {
+      uint256 _p = _r.sub(_d); // Profit
+      uint256 _fees = _p.mul(profileSharingFeePercentage).div(100);
+      token.safeTransfer(tx.origin, _r.sub(_fees));
+      token.safeTransfer(treasuryWallet, _fees);
     } else {
-      token.safeTransfer(msg.sender, r);
+      token.safeTransfer(tx.origin, _r);
     }
   }
 
@@ -397,8 +414,8 @@ contract yfUSDTv2 is ERC20, Ownable {
     if (isVesting == false) {
       return 0;
     } else {
-      uint256 shares = balanceOf(_address);
-      return token.balanceOf(address(this)).mul(shares).div(totalSupply());
+      uint256 shares = daoVault.balanceOf(_address);
+      return token.balanceOf(address(this)).mul(shares).div(daoVault.totalSupply());
     }
   }
 
@@ -409,39 +426,16 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - This contract is in vesting state
    * - Sender must has hold some daoUSDT
    */
-  function refund() external {
-    require(isVesting == true, "Not in vesting state");
-    require(balanceOf(address(msg.sender)) > 0, "No balance to refund");
-
-    uint256 shares = balanceOf(msg.sender);
-    uint256 refundAmount = token.balanceOf(address(this)).mul(shares).div(totalSupply());
-    token.safeTransfer(msg.sender, refundAmount);
-    _burn(msg.sender, shares);
-  }
-
-  /**
-   * @notice Set new strategy contract
-   * @param _newStrategy New strategy contract address
-   * Requirements:
-   * - Only contract owner can call this function
-   * - New strategy must be a contract
-   */
-  function setNewStrategy(address _newStrategy) external onlyOwner {
-    require(_newStrategy.isContract() == true, "New strategy is not contract");
-
-    newStrategy = _newStrategy;
-  }
-
-  /**
-   * @notice Migrate all token to new strategy contract
-   * Requirements:
-   * - Only contract owner can call this function
-   * - This contract is not locked
-   * - This contract is in vesting state
-   */
-  function migrate() external onlyOwner notLocked(Functions.MIGRATE) {
+  function refund(uint256 _shares) external {
     require(isVesting == true, "Not in vesting state");
 
-    token.safeTransfer(newStrategy, token.balanceOf(address(this)));
+    uint256 _refundAmount = token.balanceOf(address(this)).mul(_shares).div(daoVault.totalSupply());
+    token.safeTransfer(tx.origin, _refundAmount);
+  }
+
+  function approveMigrate() external onlyOwner {
+    require(isVesting == true, "Not in vesting state");
+
+    token.approve(address(daoVault), token.balanceOf(address(this)));
   }
 }
