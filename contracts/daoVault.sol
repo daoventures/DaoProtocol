@@ -6,12 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 interface IStrategy {
     function deposit(uint256[] memory _amounts) external;
     function withdraw(uint256[] memory _shares) external;
     function refund(uint256 _shares) external;
-    function getPoolBalance() external view returns (uint256);
+    function balanceOf(address _address) external view returns (uint256);
 }
 
 contract daoVault is ERC20, Ownable {
@@ -23,44 +24,75 @@ contract daoVault is ERC20, Ownable {
     IStrategy public strategy;
     address public pendingStrategy;
 
-    // Timelock related variable
-    bool public lockFunctions = false;
-    uint256 public unlockTime;
+    bool public contractAllowed = false;
+    bool public canSetPendingStrategy = true;
+
+    enum Functions { CONTRACT, MIGRATE }
+    uint256 private constant _LOCKTIME = 5 days;
+    mapping(Functions => uint256) public timelock;
+
+    event UnlockFunction(uint256 indexed fn);
+    event MigrateFunds(address indexed fromStrategy, address indexed toStrategy, uint256 amount);
+    event AllowContract(bool indexed contractAllowed);
 
     constructor(address _token, address _strategy) ERC20("DAO Tether USDT", "daoUSDT") {
         token = IERC20(_token);
         strategy = IStrategy(_strategy);
     }
 
-    function deposit(uint256[] memory _amounts) external {
-        uint256 _total = _amounts[0].add(_amounts[1]);
-        token.safeTransferFrom(msg.sender, address(this), _total);
-
-        strategy.deposit(_amounts);
-
-        uint256 shares = 0;
-        if (totalSupply() == 0) {
-            shares = _total;
-        } else {
-            shares = (_total.mul(totalSupply())).div(strategy.getPoolBalance());
+    modifier checkContract {
+        if (contractAllowed == false) {
+            require(address(msg.sender).isContract() == false, "Caller is a contract not EOA");
         }
-        _mint(msg.sender, shares);
+        _;
     }
 
-    function withdraw(uint256[] memory _shares) external {
+    modifier notLocked(Functions _fn) {
+        require(timelock[_fn] <= block.timestamp && timelock[_fn] + 1 days >= block.timestamp, "Function is locked");
+        _;
+    }
+
+    function deposit(uint256[] memory _amounts) external checkContract {
+        uint256 _before = strategy.balanceOf(address(this));
+        strategy.deposit(_amounts);
+        uint256 _after = strategy.balanceOf(address(this));
+        
+        if (_after > _before) {
+            uint256 _shares = _after.sub(_before);
+            _mint(msg.sender, _shares);
+        }
+    }
+
+    function withdraw(uint256[] memory _shares) external checkContract {
+        uint256 _before = strategy.balanceOf(address(this));
         strategy.withdraw(_shares);
-        uint256 _total = _shares[0].add(_shares[1]);
-        _burn(msg.sender, _total);
+        uint256 _after = strategy.balanceOf(address(this));
+
+        _burn(msg.sender, _after.sub(_before));
     }
 
-    function refund() external {
+    function refund() external checkContract {
+        require(balanceOf(msg.sender) > 0, "No balance to refund");
+
         uint256 _shares = balanceOf(msg.sender);
+        uint256 _before = strategy.balanceOf(address(this));
         strategy.refund(_shares);
-        _burn(msg.sender, _shares);
+        uint256 _after = strategy.balanceOf(address(this));
+        _burn(msg.sender, _after.sub(_before));
+    }
+
+    function unlockFunction(Functions _fn) external onlyOwner {
+        timelock[_fn] = block.timestamp.add(_LOCKTIME);
+
+        if (_fn == Functions.MIGRATE) {
+            canSetPendingStrategy = false;
+        }
+
+        emit UnlockFunction(uint256(_fn));
     }
 
     function setPendingStrategy(address _pendingStrategy) external onlyOwner {
-        require(lockFunctions == false, "Function locked");
+        require(canSetPendingStrategy == true, "Cannot set pending strategy now");
         require(_pendingStrategy.isContract() == true, "New strategy is not contract");
 
         pendingStrategy = _pendingStrategy;
@@ -69,17 +101,20 @@ contract daoVault is ERC20, Ownable {
     function _setStrategy() private {
         strategy = IStrategy(pendingStrategy);
         pendingStrategy = address(0);
-        lockFunctions = false;
+        canSetPendingStrategy = true;
     }
 
-    function unlockMigrateFunds() external onlyOwner {
-        unlockTime = block.timestamp + 5 days;
-        lockFunctions = true;
-    }
+    function migrateFunds() external onlyOwner notLocked(Functions.MIGRATE) {
+        uint256 _amount = token.balanceOf(address(strategy));
+        emit MigrateFunds(address(strategy), pendingStrategy, _amount);
 
-    function migrateFunds() external onlyOwner {
-        require(unlockTime <= block.timestamp && unlockTime + 1 days >= block.timestamp, 'Function locked');
-        token.safeTransferFrom(address(strategy), pendingStrategy, token.balanceOf(address(strategy)));
+        token.safeTransferFrom(address(strategy), pendingStrategy, _amount);
         _setStrategy();
+    }
+
+    function allowContract() external onlyOwner notLocked(Functions.CONTRACT) {
+        emit AllowContract(contractAllowed);
+
+        contractAllowed = true;
     }
 }
