@@ -30,135 +30,135 @@ npx hardhat test
 
 ## Functions
 ### User functions
-**function `deposit(list)`**
+#### function `deposit(list)`
 Deposit into Yearn Earn and Vault contract. This function only can access through daoVault contract.
-*Param*: number list [Yearn Earn deposit amount, Yearn Vault deposit amount]
+- *Param*: number list [Yearn Earn deposit amount, Yearn Vault deposit amount]
 
-**function `withdraw(list)`**
+#### function `withdraw(list)`
 Withdraw from Yearn Earn and Vault contract. This function only can access through daoVault contract.
-*Param*: number list [Yearn Earn withdraw amount, Yearn Vault withdraw amount]
+- *Param*: number list [Yearn Earn withdraw amount, Yearn Vault withdraw amount]
 
-**function `refund()`**
+#### function `refund()`
 Refund from Yearn-Farmer contract. This function only can access through daoVault contract. This function only available after Yearn-Farmer in vesting state.
-*Param*: -
+- *Param*: -
 
-**function `getEarnDepositBalance(address)`**
+#### function `getEarnDepositBalance(address)`
 Get Yearn Earn current total deposit amount of account (after deposit fee).
-*Param*: Address of account to check
-*Return*: Current total deposit amount of account in Yearn Earn (after deposit fee).
+- *Param*: Address of account to check
+- *Return*: Current total deposit amount of account in Yearn Earn (after deposit fee).
 
-**function `getVaultDepositBalance(address)`**
+#### function `getVaultDepositBalance(address)`
 Get Yearn Vault current total deposit amount of account (after deposit fee).
-*Param*: Address of account to check
-*Return*: Current total deposit amount of account in Yearn Vault (after deposit fee).
+- *Param*: Address of account to check
+- *Return*: Current total deposit amount of account in Yearn Vault (after deposit fee).
 
-**function `getSharesValue(address)`**
+#### function `getSharesValue(address)`
 Get token amount based on daoUSDT hold by account after contract in vesting state.
-*Param*: Address of account to check
-*Return*: Token amount based on on daoUSDT hold by account. 0 if contract is not in vesting state
+- *Param*: Address of account to check
+- *Return*: Token amount based on on daoUSDT hold by account. 0 if contract is not in vesting state
 
 ### Admin functions
-**function `unlockFunction(integar)`**
+#### function `unlockFunction(integar)`
 Unlock admin function. All admin function unlock time is 1 day.
-*Param*: A number that represent enum Functions (0 for `setTreasuryWallet()`, 1 for `setDepositFeeTier2()`, 2 for `setDepositFeePercentage()`, 3 for `setProfileSharingFeePercentage()`, 4 for `vesting()`)
+- *Param*: A number that represent enum Functions (0 for `setTreasuryWallet()`, 1 for `setDepositFeeTier2()`, 2 for `setDepositFeePercentage()`, 3 for `setProfileSharingFeePercentage()`, 4 for `vesting()`)
 
-**function `setTreasuryWallet(address)`**
+#### function `setTreasuryWallet(address)`
 Set new treasury wallet address in contract.
-*Param*: Address of new treasury wallet
-*Requirements*: 1 day after execute `unlockFunction(0)` and valid for 1 day.
+- *Param*: Address of new treasury wallet
+- *Requirements*: 1 day after execute `unlockFunction(0)` and valid for 1 day.
 
-**function `setDepositFeeTier2(list)`**
+#### function `setDepositFeeTier2(list)`
 Set new deposit fee tier 2.
 Deposit fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <= deposit amount <= maximum. Tier 3: maximun < deposit amount.
-*Param*: number list [minimum, maximum]
-*Requirements*: 1 day after execute `unlockFunction(1)` and valid for 1 day.
+- *Param*: number list [minimum, maximum]
+- *Requirements*: 1 day after execute `unlockFunction(1)` and valid for 1 day.
 
-**function `setDepositFeePercentage(list)`**
+#### function `setDepositFeePercentage(list)`
 Set new deposit fee percentage. Deposit fee has three tier.
-*Param*: number list [tier1perc, tier2perc, tier3perc] (100 = 1%, maximum 3999)
-*Requirements*: 1 day after execute `unlockFunction(2)` and valid for 1 day.
+- *Param*: number list [tier1perc, tier2perc, tier3perc] (100 = 1%, maximum 3999)
+- *Requirements*: 1 day after execute `unlockFunction(2)` and valid for 1 day.
 
-**function `setProfileSharingFeePercentage(integar)`**
+#### function `setProfileSharingFeePercentage(integar)`
 Set new profile sharing fee percentage.
-*Param*: integer (1 = 1%, maximun 39)
-*Requirements*: 1 day after execute `unlockFunction(3)` and valid for 1 day.
+- *Param*: integer (1 = 1%, maximun 39)
+- *Requirements*: 1 day after execute `unlockFunction(3)` and valid for 1 day.
 
-**function `setProfileSharingFeePercentage(integar)`**
+#### function `setProfileSharingFeePercentage(integar)`
 Set new profile sharing fee percentage.
-*Param*: integer (1 = 1%, maximun 39)
-*Requirements*: 1 day after execute `unlockFunction(3)` and valid for 1 day.
+- *Param*: integer (1 = 1%, maximun 39)
+- *Requirements*: 1 day after execute `unlockFunction(3)` and valid for 1 day.
 
-**function `vesting()`**
+#### function `vesting()`
 Make contract in vesting state. Withdraw all balance from Yearn Earn and Vault contract. Block user interaction function `deposit()` and `withdraw()`. `getEarnDepositBalance()` and `getVaultDepositBalance()` return 0. (use `getSharesValue()` instead)
-*Param*: -
-*Requirements*: 1 day after execute `unlockFunction(4)` and valid for 1 day.
+- *Param*: -
+- *Requirements*: 1 day after execute `unlockFunction(4)` and valid for 1 day.
 
-**function `approveMigrate()`**
+#### function `approveMigrate()`
 Allow daoVault to move funds in this contract.
-*Param*: -
-*Requirements*: Contract in vesting state
+- *Param*: -
+- *Requirements*: Contract in vesting state
 
 ### General functions
-**function `token()`**
+#### function `token()`
 Get current ERC20 token used.
-*Param*: -
-*Return*: Current ERC20 token address used
+- *Param*: -
+- *Return*: Current ERC20 token address used
 
-**function `earn()`**
+#### function `earn()`
 Get current Yearn Earn contract used.
-*Param*: -
-*Return*: Current Yearn Earn contract address used
+- *Param*: -
+- *Return*: Current Yearn Earn contract address used
 
-**function `vault()`**
+#### function `vault()`
 Get current Yearn Vault contract used.
-*Param*: -
-*Return*: Current Yearn Vault contract address used
+- *Param*: -
+- *Return*: Current Yearn Vault contract address used
 
-**function `pool()`**
+#### function `pool()`
 Get current accumulate pool.
-*Param*: -
-*Return*: Current accumulate pool amount
+- *Param*: -
+- *Return*: Current accumulate pool amount
 
-**function `treasuryWallet()`**
+#### function `treasuryWallet()`
 Get current treasury wallet.
-*Param*: -
-*Return*: Current treasury wallet address
+- *Param*: -
+- *Return*: Current treasury wallet address
 
-**function `depositFeeTier2()`**
+#### function `depositFeeTier2()`
 Get current deposit fee tier 2 ([minimun, maximun]).
 Deposit fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <= deposit amount <= maximum. Tier 3: maximun < deposit amount.
-*Param*: -
-*Return*: Current deposit fee tier 2
+- *Param*: -
+- *Return*: Current deposit fee tier 2
 
-**function `depositFeePercentage()`**
+#### function `depositFeePercentage()`
 Get current deposit fee percentage ([tier1perc, tier2perc, tier3perc]). 100 = 1%.
-*Param*: -
-*Return*: Current deposit fee percentage in amount
+- *Param*: -
+- *Return*: Current deposit fee percentage in amount
 
-**function `profileSharingFeePercentage()`**
+#### function `profileSharingFeePercentage()`
 Get current profile sharing fee percentage. 1 = 1%.
-*Param*: -
-*Return*: Current profile sharing fee percentage in amount
+- *Param*: -
+- *Return*: Current profile sharing fee percentage in amount
 
-**function `isVesting()`**
+#### function `isVesting()`
 Get current vesting state.
-*Param*: -
-*Return*: Current vesting state in boolean
+- *Param*: -
+- *Return*: Current vesting state in boolean
 
-**function `daoVault()`**
+#### function `daoVault()`
 Get current daoVault used.
-*Param*: -
-*Return*: Current daoVault address
+- *Param*: -
+- *Return*: Current daoVault address
 
-**function `TIMELOCK()`**
+#### function `TIMELOCK()`
 Get timelock duration for each unlock (unchangable).
-*Param*: -
-*Return*: Timelock duration for each unlock
+- *Param*: -
+- *Return*: Timelock duration for each unlock
 
-**function `timelock()`**
+#### function `timelock()`
 Get current unlock time for function (in seconds, since 1970-01-01).
-*Param*: A number that represent enum Functions (0 for `setTreasuryWallet()`, 1 for `setDepositFeeTier2()`, 2 for `setDepositFeePercentage()`, 3 for `setProfileSharingFeePercentage()`, 4 for `vesting()`)
-*Return*: Current unlock time for function
+- *Param*: A number that represent enum Functions (0 for `setTreasuryWallet()`, 1 for `setDepositFeeTier2()`, 2 for `setDepositFeePercentage()`, 3 for `setProfileSharingFeePercentage()`, 4 for `vesting()`)
+- *Return*: Current unlock time for function
 
 # Vault
 Vault is a contract that help user to deposit, withdraw and refund in the latest strategy. Vault distribute daoToken to user based on shares.
@@ -169,59 +169,59 @@ Vault is a contract that help user to deposit, withdraw and refund in the latest
 
 ## Functions
 ### User functions
-**function `deposit(list)`**
+#### function `deposit(list)`
 Deposit into strategy.
-*Param*: number list [first amount, second amount]
+- *Param*: number list [first amount, second amount]
 
-**function `withdraw(list)`**
+#### function `withdraw(list)`
 Withdraw from strategy.
-*Param*: number list [first amount, second amount]
+- *Param*: number list [first amount, second amount]
 
-**function `refund()`**
+#### function `refund()`
 Refund from strategy. Only available if strategy in certain condition (for example vesting state).
-*Param*: -
+- *Param*: -
 
 ### Admin functions
-**function `setPendingStrategy(address)`**
+#### function `setPendingStrategy(address)`
 Set new strategy that will be replace old strategy.
-*Param*: New strategy address
+- *Param*: New strategy address
 
-**function `unlockMigrateFunds()`**
+#### function `unlockMigrateFunds()`
 Unlock `migrateFunds()`. Execute `setPendingStrategy()` will be reverted after execute this function.
-*Param*: -
+- *Param*: -
 
-**function `migrateFunds()`**
+#### function `migrateFunds()`
 Migrate funds from old strategy to new strategy.
-*Param*: -
-*Requirements*: 5 days after execute `unlockMigrateFunds()` and valid for 1 day.  
+- *Param*: -
+- *Requirements*: 5 days after execute `unlockMigrateFunds()` and valid for 1 day.  
 
 ### General functions
-**function `token()`**
+#### function `token()`
 Get current ERC20 token used.
-*Param*: -
-*Return*: Current ERC20 token address used
+- *Param*: -
+- *Return*: Current ERC20 token address used
 
-**function `strategy()`**
+#### function `strategy()`
 Get current strategy contract used.
-*Param*: -
-*Return*: Current strategy contract address used
+- *Param*: -
+- *Return*: Current strategy contract address used
 
-**function `pendingStrategy()`**
+#### function `pendingStrategy()`
 Get current pending strategy address if got (only use when prepare to change strategy).
-*Param*: -
-*Return*: Current pending strategy address if got
+- *Param*: -
+- *Return*: Current pending strategy address if got
 
-**function `canSetPendingStrategy()`**
+#### function `canSetPendingStrategy()`
 Check status whether can set pending strategy (return false when unlock migrate function).
-*Param*: -
-*Return*: Current can set pending strategy status in boolean
+- *Param*: -
+- *Return*: Current can set pending strategy status in boolean
 
-**function `unlockTime()`**
+#### function `unlockTime()`
 Check unlock time for function `migrateFunds()`.
-*Param*: -
-*Return*: integar (seconds since 1970-01-01)
+- *Param*: -
+- *Return*: integar (seconds since 1970-01-01)
 
-**function `LOCKTIME()`**
+#### function `LOCKTIME()`
 Check duration for unlock `migrateFunds()` (unchangable).
-*Param*: -
-*Return*: integar (seconds)
+- *Param*: -
+- *Return*: integar (seconds)
