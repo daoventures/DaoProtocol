@@ -219,9 +219,14 @@ Check status whether can set pending strategy (return false when unlock migrate 
 #### function `unlockTime()`
 Check unlock time for function `migrateFunds()`.
 - *Param*: -
-- *Return*: integar (seconds since 1970-01-01)
+- *Return*: Unlock time(seconds since 1970-01-01)
 
 #### function `LOCKTIME()`
 Check duration for unlock `migrateFunds()` (unchangable).
 - *Param*: -
-- *Return*: integar (seconds)
+- *Return*: Duration(seconds)
+
+#### function `balanceOf(address)`
+Check balance of daoToken.
+- *Param*: Address to check
+- *Return*: Balance of daoToken
