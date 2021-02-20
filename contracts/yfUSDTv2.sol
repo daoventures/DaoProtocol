@@ -35,7 +35,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   IERC20 public token;
   IYearn public earn;
   IYvault public vault;
-  uint256 public constant MAX_UNIT = 2**256 - 2;
+  uint256 private constant MAX_UNIT = 2**256 - 2;
   mapping (address => uint256) private earnDepositBalance;
   mapping (address => uint256) private vaultDepositBalance;
   uint256 public pool;
@@ -59,13 +59,13 @@ contract yfUSDTv2 is ERC20, Ownable {
   event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
-  constructor(address _earn, address _vault, address _treasuryWallet)
+  constructor(address _token, address _earn, address _vault, address _treasuryWallet)
     ERC20("Yearn Farmer USDT", "yfUSDT") {
-      token = IERC20(address(0xdAC17F958D2ee523a2206206994597C13D831ec7)); // ********** This need to be change to respective address for DAI, USDC and TUSD **********
+      token = IERC20(_token);
 
       earn = IYearn(address(_earn));
       vault = IYvault(address(_vault));
-      approvePooling();
+      _approvePooling();
 
       treasuryWallet = _treasuryWallet;
   }
@@ -83,7 +83,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Unlock admin function. All admin function unlock time is 1 day except migrate funds(5 days)
+   * @notice Unlock admin function. All admin function unlock time is 1 day.
    * @param _fn A number that represent enum Functions
    * @dev 0 = WALLET, 1 = FEETIER, ..., 5 = MIGRATE
    * Requirements:
@@ -179,7 +179,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Approve Yearn Finance contracts to deposit token from this contract
    * @dev This function only need execute once in contract contructor
    */
-  function approvePooling() public {
+  function _approvePooling() private {
     // Allow Yearn Earn contract to transfer USDT from this contract
     uint256 earnAllowance = token.allowance(address(this), address(earn));
     if (earnAllowance == uint256(0)) {
@@ -196,8 +196,6 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Get Yearn Earn current total deposit amount of account (after deposit fee)
    * @param _address Address of account to check
    * @return Current total deposit amount of account in Yearn Earn (after deposit fee). 0 if contract is in vesting state.
-   * Requirements:
-   * - This contract is not in vesting state
    */
   function getEarnDepositBalance(address _address) external view returns (uint256) {
     if (isVesting == true) {
@@ -211,8 +209,6 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Get Yearn Vault current total deposit amount of account (after deposit fee)
    * @param _address Address of account to check
    * @return Current total deposit amount of account in Yearn Vault (after deposit fee). 0 if contract is in vesting state.
-   * Requirements:
-   * - This contract is not in vesting state
    */
   function getVaultDepositBalance(address _address) external view returns (uint256) {
     if (isVesting == true) {
