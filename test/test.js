@@ -1,7 +1,7 @@
 const { expect } = require("chai")
 const { ethers, network } = require("hardhat")
 require("dotenv").config()
-const IERC20_ABI = require("../abis/IERC20.json").abi
+const IERC20_ABI = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json").abi
 const IYearn_ABI = require("../artifacts/interfaces/IYearn.sol/IYearn.json").abi
 const IYvault_ABI = require("../artifacts/interfaces/IYvault.sol/IYvault.json").abi
 
