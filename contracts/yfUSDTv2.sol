@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
-pragma experimental ABIEncoderV2;
 
 /// @title OpenZeppelin libraries
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -51,10 +50,9 @@ contract yfUSDTv2 is ERC20, Ownable {
   IDaoVault public daoVault;
 
   // Timelock related variable
-  enum Functions { WALLET, FEETIER, D_FEEPERC, W_FEEPERC, VEST, MIGRATE }
-  uint256 private constant _TIMELOCK = 1 days;
+  enum Functions {WALLET, FEETIER, D_FEEPERC, W_FEEPERC, VEST}
+  uint256 public constant TIMELOCK = 1 days;
   mapping(Functions => uint256) public timelock;
-  address public newStrategy;
 
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
   event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
@@ -80,7 +78,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    */
   modifier notLocked(Functions _fn) {
     require(timelock[_fn] != 0 && timelock[_fn] <= block.timestamp 
-      && timelock[_fn] + 1 days >= block.timestamp, "Function is locked");
+      && timelock[_fn] + 1 days >= block.timestamp, "Function locked");
     _;
   }
 
@@ -92,11 +90,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - Only contract owner can call this function
    */
   function unlockFunction(Functions _fn) external onlyOwner {
-    if (_fn == Functions.MIGRATE) {
-      timelock[_fn] = block.timestamp.add(_TIMELOCK.mul(5));
-    } else {
-      timelock[_fn] = block.timestamp.add(_TIMELOCK);
-    }
+    timelock[_fn] = block.timestamp.add(TIMELOCK);
   }
 
   function setVault(address _address) external onlyOwner {
@@ -325,7 +319,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
   function _withdrawEarn(uint256 _shares) private {
-    uint256 _d = pool.mul(_shares).div(daoVault.totalSupply()); // Initial Deposit Amount
+    uint256 _d = pool.mul(_shares).div(totalSupply()); // Initial Deposit Amount
     require(earnDepositBalance[tx.origin] >= _d, "Insufficient balance");
     uint256 _earnShares = (_d.mul(earn.totalSupply())).div(earn.calcPoolValueInToken()); // Find earn shares based on deposit amount 
     uint256 _r = ((earn.calcPoolValueInToken()).mul(_earnShares)).div(earn.totalSupply()); // Actual earn withdraw amount
@@ -358,15 +352,16 @@ contract yfUSDTv2 is ERC20, Ownable {
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
   function _withdrawVault(uint256 _shares) private {
-    uint256 _d = pool.mul(_shares).div(daoVault.totalSupply()); // Initial Deposit Amount
+    uint256 _d = pool.mul(_shares).div(totalSupply()); // Initial Deposit Amount
     require(vaultDepositBalance[tx.origin] >= _d, "Insufficient balance");
     uint256 _vaultShares = (_d.mul(vault.totalSupply())).div(vault.balance()); // Find vault shares based on deposit amount 
     uint256 _r = ((vault.balance()).mul(_vaultShares)).div(vault.totalSupply()); // Actual vault withdraw amount
-    // uint256 r = 400; // For testing purpose, need to be removed on production
+    // uint256 _r = 400; // For testing purpose, need to be removed on production
 
     vault.withdraw(_vaultShares);
     vaultDepositBalance[tx.origin] = vaultDepositBalance[tx.origin].sub(_d);
 
+    _burn(address(daoVault), _shares);
     pool = pool.sub(_d);
 
     if (_r > _d) {
@@ -393,14 +388,20 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     // Withdraw all funds from Yearn earn and vault contract
     isVesting = true;
-    earn.withdraw(earn.balanceOf((address(this))));
-    vault.withdraw(vault.balanceOf((address(this))));
+    uint256 _earnBalance = earn.balanceOf(address(this));
+    uint256 _vaultBalance = vault.balanceOf(address(this));
+    if (_earnBalance > 0) {
+      earn.withdraw(_earnBalance);
+    }
+    if (_vaultBalance > 0) {
+      vault.withdraw(_vaultBalance);
+    }
 
     // Collect all profit
     if (token.balanceOf(address(this)) > pool) {
-      uint256 profit = token.balanceOf(address(this)).sub(pool);
-      uint256 fees = profit.mul(profileSharingFeePercentage).div(100);
-      token.safeTransfer(treasuryWallet, fees);
+      uint256 _profit = token.balanceOf(address(this)).sub(pool);
+      uint256 _fee = _profit.mul(profileSharingFeePercentage).div(100);
+      token.safeTransfer(treasuryWallet, _fee);
     }
     pool = 0;
   }
@@ -414,8 +415,12 @@ contract yfUSDTv2 is ERC20, Ownable {
     if (isVesting == false) {
       return 0;
     } else {
-      uint256 shares = daoVault.balanceOf(_address);
-      return token.balanceOf(address(this)).mul(shares).div(daoVault.totalSupply());
+      uint256 _shares = daoVault.balanceOf(_address);
+      if (_shares > 0) {
+        return token.balanceOf(address(this)).mul(_shares).div(daoVault.totalSupply());
+      } else {
+        return 0;
+      }
     }
   }
 
@@ -431,11 +436,14 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     uint256 _refundAmount = token.balanceOf(address(this)).mul(_shares).div(daoVault.totalSupply());
     token.safeTransfer(tx.origin, _refundAmount);
+    _burn(address(daoVault), _shares);
   }
 
   function approveMigrate() external onlyOwner {
     require(isVesting == true, "Not in vesting state");
 
-    token.approve(address(daoVault), token.balanceOf(address(this)));
+    if (token.allowance(address(this), address(daoVault)) == 0) {
+      token.safeApprove(address(daoVault), token.balanceOf(address(this)));
+    }
   }
 }
