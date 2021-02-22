@@ -1,26 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
 
-/// @title OpenZeppelin libraries
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-/// @dev Interface of Yearn Finance Earn and Vault contract
 import "../interfaces/IYearn.sol";
 import "../interfaces/IYvault.sol";
+import "../interfaces/IDaoVault.sol";
 
-// For debugging use, will be removed in production
-import "hardhat/console.sol";
-
-interface IDaoVault {
-  function totalSupply() external view returns (uint256);
-  function balanceOf(address _address) external view returns (uint256); 
-}
-
-/// @title Contract for utilize USDT in Yearn Finance contract
+/// @title Contract for yield token in Yearn Finance contracts
 contract yfUSDTv2 is ERC20, Ownable {
   /**
    * @dev Inherit from Ownable contract enable contract ownership transferable
@@ -83,16 +74,24 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Unlock admin function. All admin function unlock time is 1 day.
+   * @notice Unlock admin function. All admin function unlock time is 1 day and valid for 1 day.
    * @param _fn A number that represent enum Functions
-   * @dev 0 = WALLET, 1 = FEETIER, ..., 5 = MIGRATE
+   * @dev Example: 0 = WALLET, 1 = FEETIER, ..., 4 = VEST
    * Requirements:
-   * - Only contract owner can call this function
+   * - Only owner of this contract can call this function
    */
   function unlockFunction(Functions _fn) external onlyOwner {
     timelock[_fn] = block.timestamp.add(TIMELOCK);
   }
 
+  /**
+   * @notice Set Vault that interact with this contract
+   * @dev This function call after deploy Vault contract and only able to call once 
+   * @param _address Address of Vault
+   * Requirements:
+   * - Only owner of this contract can call this function
+   * - Vault is not set yet
+   */
   function setVault(address _address) external onlyOwner {
     require(address(daoVault) == address(0), "Vault set");
 
@@ -103,13 +102,13 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Set new treasury wallet address in contract
    * @param _treasuryWallet Address of new treasury wallet
    * Requirements:
-   * - Only contract owner can call this function
+   * - Only owner of this contract can call this function
    * - This contract is not locked
    */
   function setTreasuryWallet(address _treasuryWallet) external onlyOwner notLocked(Functions.WALLET) {
     emit SetTreasuryWallet(treasuryWallet, _treasuryWallet);
     treasuryWallet = _treasuryWallet;
-    timelock[Functions.WALLET] = 0;
+    timelock[Functions.WALLET] = 0; // Lock back this function
   }
 
   /**
@@ -117,7 +116,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Details for deposit fee tier can view at deposit() function below
    * @param _depositFeeTier2  Array [tier2 minimun, tier2 maximun], view additional info below
    * Requirements:
-   * - Only contract owner can call this function
+   * - Only owner of this contract can call this function
    * - This contract is not locked
    * - First element in array must greater than 0
    * - Second element must greater than first element
@@ -133,14 +132,14 @@ contract yfUSDTv2 is ERC20, Ownable {
      */
     emit SetDepositFeeTier2(depositFeeTier2, _depositFeeTier2);
     depositFeeTier2 = _depositFeeTier2;
-    timelock[Functions.FEETIER] = 0;
+    timelock[Functions.FEETIER] = 0; // Lock back this function
   }
 
   /**
    * @notice Set deposit fee in percentage
    * @param _depositFeePercentage An array of integer, view additional info below
    * Requirements:
-   * - Only contract owner can call this function
+   * - Only owner of this contract can call this function
    * - This contract is not locked
    * - Each of the element in the array must less than 4000 (40%) 
    */
@@ -157,14 +156,14 @@ contract yfUSDTv2 is ERC20, Ownable {
     );
     emit SetDepositFeePercentage(depositFeePercentage, _depositFeePercentage);
     depositFeePercentage = _depositFeePercentage;
-    timelock[Functions.D_FEEPERC] = 0;
+    timelock[Functions.D_FEEPERC] = 0; // Lock back this function
   }
 
   /**
-   * @notice Set profile sharing(withdraw with profit) fee in percentage
+   * @notice Set profile sharing(activate when withdraw with profit) fee in percentage
    * @param _percentage Integar that represent actual percentage
    * Requirements:
-   * - Only contract owner can call this function
+   * - Only owner of this contract can call this function
    * - This contract is not locked
    * - Amount set must less than 40 (40%)
    */
@@ -172,7 +171,7 @@ contract yfUSDTv2 is ERC20, Ownable {
     require(_percentage < 40, "Profile sharing fee percentage cannot be more than 40%");
     emit SetProfileSharingFeePercentage(profileSharingFeePercentage, _percentage);
     profileSharingFeePercentage = _percentage;
-    timelock[Functions.W_FEEPERC] = 0;
+    timelock[Functions.W_FEEPERC] = 0; // Lock back this function
   }
 
   /**
@@ -180,12 +179,10 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @dev This function only need execute once in contract contructor
    */
   function _approvePooling() private {
-    // Allow Yearn Earn contract to transfer USDT from this contract
     uint256 earnAllowance = token.allowance(address(this), address(earn));
     if (earnAllowance == uint256(0)) {
       token.safeApprove(address(earn), MAX_UNIT);
     }
-    // Allow Yearn Vault contract to transfer USDT from this contract
     uint256 vaultAllowance = token.allowance(address(this), address(vault));
     if (vaultAllowance == uint256(0)) {
       token.safeApprove(address(vault), MAX_UNIT);
@@ -195,7 +192,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   /**
    * @notice Get Yearn Earn current total deposit amount of account (after deposit fee)
    * @param _address Address of account to check
-   * @return Current total deposit amount of account in Yearn Earn (after deposit fee). 0 if contract is in vesting state.
+   * @return Current total deposit amount of account in Yearn Earn. 0 if contract is in vesting state.
    */
   function getEarnDepositBalance(address _address) external view returns (uint256) {
     if (isVesting == true) {
@@ -208,7 +205,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   /**
    * @notice Get Yearn Vault current total deposit amount of account (after deposit fee)
    * @param _address Address of account to check
-   * @return Current total deposit amount of account in Yearn Vault (after deposit fee). 0 if contract is in vesting state.
+   * @return Current total deposit amount of account in Yearn Vault. 0 if contract is in vesting state.
    */
   function getVaultDepositBalance(address _address) external view returns (uint256) {
     if (isVesting == true) {
@@ -219,14 +216,13 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Deposit USDT into Yearn Earn and Vault contract
-   * @notice Sender get daoUSDT token based on shares after deposit
-   * @param _amounts amount of earn and vault to deposit
+   * @notice Deposit token into Yearn Earn and Vault contract
+   * @param _amounts amount of earn and vault to deposit in list: [earn deposit amount, vault deposit amount]
    * Requirements:
-   * - Sender must approve this contract to transfer USDT from sender to this contract
-   * - Sender must be an EOA account
+   * - Sender must approve this contract to transfer token from sender to this contract
    * - This contract is not in vesting state
-   * - Either earn deposit or vault deposit must greater than 0
+   * - Only daoVault can call this function
+   * - Either first element(earn deposit) or second element(earn deposit) in list must greater than 0
    */
   function deposit(uint256[] memory _amounts) public {
     require(isVesting == false, "Contract in vesting state");
@@ -291,6 +287,13 @@ contract yfUSDTv2 is ERC20, Ownable {
     pool = pool.add(_earnAmount.add(_vaultAmount));
   }
 
+  /**
+   * @notice Withdraw from Yearn Earn and Vault contract
+   * @param _shares amount of earn and vault to withdraw in list: [earn withdraw amount, vault withdraw amount]
+   * Requirements:
+   * - This contract is not in vesting state
+   * - Only daoVault can call this function
+   */
   function withdraw(uint256[] memory _shares) external {
     require(isVesting == false, "Contract in vesting state");
     require(msg.sender == address(daoVault), "Only can call from Vault");
@@ -305,13 +308,11 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Withdraw USDT from Yearn Earn contract
-   * @notice Sender's daoUSDT token been burned based on amount withdraw
+   * @notice Withdraw from Yearn Earn contract
+   * @dev Only call within function withdraw()
    * @param _shares Amount of shares to withdraw
    * Requirements:
-   * - Sender must be an EOA account
    * - Contract is not in vesting state
-   * - Amount input must greater than 0
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
   function _withdrawEarn(uint256 _shares) private {
@@ -319,7 +320,6 @@ contract yfUSDTv2 is ERC20, Ownable {
     require(earnDepositBalance[tx.origin] >= _d, "Insufficient balance");
     uint256 _earnShares = (_d.mul(earn.totalSupply())).div(earn.calcPoolValueInToken()); // Find earn shares based on deposit amount 
     uint256 _r = ((earn.calcPoolValueInToken()).mul(_earnShares)).div(earn.totalSupply()); // Actual earn withdraw amount
-    // uint256 _r = 200; // For testing purpose, need to be removed on production
 
     earn.withdraw(_earnShares);
     earnDepositBalance[tx.origin] = earnDepositBalance[tx.origin].sub(_d);
@@ -338,21 +338,18 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Withdraw USDT from Yearn Vault contract
-   * @notice Sender's daoUSDT token been burned based on amount withdraw
+   * @notice Withdraw from Yearn Vault contract
+   * @dev Only call within function withdraw()
    * @param _shares Amount of shares to withdraw
    * Requirements:
-   * - Sender must be an EOA account
    * - Contract is not in vesting state
-   * - Amount input must greater than 0
-   * - Amount input must less than or equal to sender current total amount of earn deposit in contract
+   * - Amount input must less than or equal to sender current total amount of vault deposit in contract
    */
   function _withdrawVault(uint256 _shares) private {
     uint256 _d = pool.mul(_shares).div(totalSupply()); // Initial Deposit Amount
     require(vaultDepositBalance[tx.origin] >= _d, "Insufficient balance");
     uint256 _vaultShares = (_d.mul(vault.totalSupply())).div(vault.balance()); // Find vault shares based on deposit amount 
     uint256 _r = ((vault.balance()).mul(_vaultShares)).div(vault.totalSupply()); // Actual vault withdraw amount
-    // uint256 _r = 400; // For testing purpose, need to be removed on production
 
     vault.withdraw(_vaultShares);
     vaultDepositBalance[tx.origin] = vaultDepositBalance[tx.origin].sub(_d);
@@ -375,7 +372,7 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Disabled the deposit and withdraw functions for public
    * @notice Only allowed users to do refund from this contract
    * Requirements:
-   * - Only contract owner can call this function
+   * - Only owner of this contract can call this function
    * - This contract is not locked
    * - This contract is not in vesting state
    */
@@ -425,16 +422,24 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Only available after contract in vesting state
    * Requirements:
    * - This contract is in vesting state
-   * - Sender must has hold some daoUSDT
+   * - Only daoVault can call this function
    */
   function refund(uint256 _shares) external {
     require(isVesting == true, "Not in vesting state");
+    require(msg.sender == address(daoVault), "Only can call from Vault");
 
     uint256 _refundAmount = token.balanceOf(address(this)).mul(_shares).div(daoVault.totalSupply());
     token.safeTransfer(tx.origin, _refundAmount);
     _burn(address(daoVault), _shares);
   }
 
+  /**
+   * @notice Approve daoVault to migrate funds from this contract
+   * @notice Only available after contract in vesting state
+   * Requirements:
+   * - Only owner of this contract can call this function
+   * - This contract is in vesting state
+   */
   function approveMigrate() external onlyOwner {
     require(isVesting == true, "Not in vesting state");
 
