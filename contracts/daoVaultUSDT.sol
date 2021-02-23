@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 /**
  * New strategy contract must utilize ERC20 and with functions below:
+ *
+ * In constructor, _setupDecimals(decimals) follow token decimals
  * 
  * function deposit(uint256[] memory _amounts)
  * -> Receive list as argument
@@ -34,7 +36,7 @@ interface IStrategy {
 }
 
 /// @title Contract to interact between user and strategy, and distribute daoToken
-contract daoVault is ERC20, Ownable {
+contract daoVaultUSDT is ERC20, Ownable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -51,6 +53,7 @@ contract daoVault is ERC20, Ownable {
 
     constructor(address _token, address _strategy) ERC20("DAO Tether USDT", "daoUSDT") {
         token = IERC20(_token);
+        _setupDecimals(6);
         strategy = IStrategy(_strategy);
     }
 
