@@ -19,8 +19,7 @@ npx hardhat compile
 ```
 
 ## Tests
-Create an .env file within the folder
-Type in `PUBLIC_NODE_URL=https://eth-mainnet.alchemyapi.io/v2/{your-alchemy-id}`
+Create an .env file within the folder. Type in `PUBLIC_NODE_URL=https://eth-mainnet.alchemyapi.io/v2/{your-alchemy-id}`
 > Note: For public node, we recommend use Alchemy instead of Infura. Infura may cause some weird error in this test suite. If you don't have one, apply in https://www.alchemyapi.io/
 
 ```
@@ -36,7 +35,8 @@ Deposit into Yearn Earn and Vault contract. This function only can access throug
 
 #### function `withdraw(list)`
 Withdraw from Yearn Earn and Vault contract. This function only can access through daoVault contract.
-- *Param*: number list [Yearn Earn withdraw amount, Yearn Vault withdraw amount]
+- *Param*: number list [Yearn Earn withdraw shares, Yearn Vault withdraw shares]
+> Get Yearn Earn/Vault withdraw shares from Yearn-Farmer v2 through getEarnDepositBalance()/getVaultDepositBalance(). Deposit balance = shares amount. This is for the very first strategy only(before vesting).
 
 #### function `refund()`
 Refund from Yearn-Farmer contract. This function only can access through daoVault contract. This function only available after Yearn-Farmer in vesting state.
@@ -53,9 +53,9 @@ Get Yearn Vault current total deposit amount of account (after deposit fee).
 - *Return*: Current total deposit amount of account in Yearn Vault (after deposit fee).
 
 #### function `getSharesValue(address)`
-Get token amount based on daoUSDT hold by account after contract in vesting state.
+Get token amount based on daoToken hold by account after contract in vesting state.
 - *Param*: Address of account to check
-- *Return*: Token amount based on on daoUSDT hold by account. 0 if contract is not in vesting state
+- *Return*: Token amount based on on daoToken hold by account. 0 if contract is not in vesting state
 
 ### Admin functions
 #### function `unlockFunction(integar)`
@@ -77,11 +77,6 @@ Deposit fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <=
 Set new deposit fee percentage. Deposit fee has three tier.
 - *Param*: number list [tier1perc, tier2perc, tier3perc] (100 = 1%, maximum 3999)
 - *Requirements*: 1 day after execute `unlockFunction(2)` and valid for 1 day.
-
-#### function `setProfileSharingFeePercentage(integar)`
-Set new profile sharing fee percentage.
-- *Param*: integer (1 = 1%, maximun 39)
-- *Requirements*: 1 day after execute `unlockFunction(3)` and valid for 1 day.
 
 #### function `setProfileSharingFeePercentage(integar)`
 Set new profile sharing fee percentage.
