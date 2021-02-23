@@ -33,7 +33,7 @@ contract yfUSDTv2 is ERC20, Ownable {
 
   address public treasuryWallet; // Address that collecting fees
 
-  uint256[] public depositFeeTier2 = [10001, 100000]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
+  uint256[] public depositFeeTier2 = [10000e6+1, 100000e6]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
   uint256[] public depositFeePercentage = [100, 50, 25]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.5%, 0.25%]
   uint256 public profileSharingFeePercentage = 10;
 
@@ -53,6 +53,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   constructor(address _token, address _earn, address _vault, address _treasuryWallet)
     ERC20("Yearn Farmer USDT", "yfUSDT") {
       token = IERC20(_token);
+      _setupDecimals(6);
 
       earn = IYearn(address(_earn));
       vault = IYvault(address(_vault));
