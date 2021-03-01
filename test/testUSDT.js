@@ -21,7 +21,7 @@ describe("yfUSDTv2", () => {
             params: [{
                 forking: {
                     jsonRpcUrl: process.env.PUBLIC_NODE_URL,
-                    blockNumber: 11686462
+                    blockNumber: 11953100
                 }
             }]
         })
@@ -74,14 +74,6 @@ describe("yfUSDTv2", () => {
         expect(await yfUSDTContract.isVesting()).is.false
         // Check if daoVaultUSDT contract address set correctly in Yearn Farmer contract
         expect(await yfUSDTContract.daoVault()).to.equal(daoVaultUSDT.address)
-        // Check if timelock duration is set to 1 day in Yearn Farmer contract
-        expect(await yfUSDTContract.TIMELOCK()).to.equal(1*24*60*60) // 1 day in seconds
-        // Check if no pre-set timelock in corresponding admin functions in Yearn Farmer contract
-        expect(await yfUSDTContract.timelock(0)).to.equal(0) // setTreasuryWallet()
-        expect(await yfUSDTContract.timelock(1)).to.equal(0) // setDepositFeeTier2()
-        expect(await yfUSDTContract.timelock(2)).to.equal(0) // setDepositFeePercentage()
-        expect(await yfUSDTContract.timelock(3)).to.equal(0) // setProfileSharingFeePercentage()
-        expect(await yfUSDTContract.timelock(4)).to.equal(0) // vesting()
         // Check daoUSDT token is set properly in daoVaultUSDT contract
         expect(await daoVaultUSDT.name()).to.equal("DAO Tether USDT")
         expect(await daoVaultUSDT.symbol()).to.equal("daoUSDT")
@@ -461,7 +453,7 @@ describe("yfUSDTv2", () => {
             const vaultDepositBalance = (22222000000-Math.floor(22222000000*0.005))+(19367000000-Math.floor(19367000000*0.005))-19965000000
             expect(await yfUSDTContract.getVaultDepositBalance(senderSigner.address)).to.equal(vaultDepositBalance)
             // Check if balance token of sender account correctly after mix and max deposit and withdraw
-            expect(await token.balanceOf(senderSigner.address)).to.equal(currentTokenBalance.add(1)) // Small variation
+            expect(await token.balanceOf(senderSigner.address)).to.equal(currentTokenBalance.sub(1)) // Small variation
             // Check if daoUSDT balance of sender account correct
             expect(await daoVaultUSDT.balanceOf(senderSigner.address)).to.equal(earnDepositBalance+vaultDepositBalance)
             // Check if treasury wallet receive fees amount correctly
@@ -496,9 +488,7 @@ describe("yfUSDTv2", () => {
             const clientActualEarnWithdrawAmount = ((await earnContract.calcPoolValueInToken()).mul(clientEarnSharesinYearnContract)).div(await earnContract.totalSupply())
             const clientVaultSharesinYearnContract = (clientVaultDepositBalanceBeforeVesting).mul(await vaultContract.totalSupply()).div(await vaultContract.balance())
             const clientActualVaultWithdrawAmount = ((await vaultContract.balance()).mul(clientVaultSharesinYearnContract)).div(await vaultContract.totalSupply())
-            // Unlock and execute vesting function
-            await yfUSDTContract.unlockFunction(4)
-            network.provider.send("evm_increaseTime", [86400])
+            // Execute vesting function
             await yfUSDTContract.vesting()
             // Check if function to get shares value return correctly
             expect(await yfUSDTContract.getSharesValue(clientSigner.address)).to.gte(clientActualEarnWithdrawAmount.add(clientActualVaultWithdrawAmount))
@@ -529,9 +519,7 @@ describe("yfUSDTv2", () => {
             await daoVaultUSDT.deposit(["100000000", "200000000"])
             // Get client USDT balance before refund
             const tokenBalanceBeforeRefund = await token.balanceOf(senderSigner.address)
-            // Unlock and execute vesting function
-            await yfUSDTContract.unlockFunction(4)
-            network.provider.send("evm_increaseTime", [86400])
+            // Execute vesting function
             await yfUSDTContract.vesting()
             // Get shares value before execute refund function
             const sharesValue = await yfUSDTContract.getSharesValue(senderSigner.address)
@@ -584,7 +572,6 @@ describe("yfUSDTv2", () => {
             await expect(daoVaultUSDT.connect(newOwnerSigner).unlockMigrateFunds()).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(daoVaultUSDT.connect(newOwnerSigner).setPendingStrategy(newOwnerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(daoVaultUSDT.connect(newOwnerSigner).migrateFunds()).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).unlockFunction(0)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setVault(newOwnerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setTreasuryWallet(newOwnerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Ownable: caller is not the owner")
@@ -600,7 +587,6 @@ describe("yfUSDTv2", () => {
             await expect(daoVaultUSDT.connect(newOwnerSigner).unlockMigrateFunds()).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(daoVaultUSDT.connect(newOwnerSigner).setPendingStrategy(ownerSigner.address)).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(daoVaultUSDT.connect(newOwnerSigner).migrateFunds()).not.to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).unlockFunction(0)).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setVault(ownerSigner.address)).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setTreasuryWallet(ownerSigner.address)).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setDepositFeeTier2(["100000000", "200000000"])).not.to.be.revertedWith("Ownable: caller is not the owner")
@@ -612,7 +598,6 @@ describe("yfUSDTv2", () => {
             await expect(daoVaultUSDT.connect(ownerSigner).setPendingStrategy(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(daoVaultUSDT.connect(ownerSigner).migrateFunds()).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).transferOwnership(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(ownerSigner).unlockFunction(0)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).setVault(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).setTreasuryWallet(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Ownable: caller is not the owner")
@@ -639,8 +624,6 @@ describe("yfUSDTv2", () => {
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, deployerSigner)
             await token.approve(yfUSDTContract.address, "100000000000")
             await daoVaultUSDT.deposit(["1000000000", "2000000000"])
-            await yfUSDTContract.unlockFunction(4) // unlock vesting() function
-            network.provider.send("evm_increaseTime", [86400])
             await yfUSDTContract.vesting()
             // Get Yearn Farmer token balance before migrate
             const tokenBalance = await token.balanceOf(yfUSDTContract.address) 
@@ -671,49 +654,6 @@ describe("yfUSDTv2", () => {
             await expect(daoVaultUSDT.migrateFunds()).to.be.revertedWith("Function locked")
         })
 
-        it("should lock function properly in Yearn Farmer contract", async () => {
-            // Get address of deployer and deploy the contracts
-            const [deployerSigner, _] = await ethers.getSigners()
-            const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
-            await yfUSDTContract.setVault(daoVaultUSDT.address)
-            // Check if corresponding admin functions is locked
-            await expect(yfUSDTContract.setTreasuryWallet(deployerSigner.address)).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeePercentage([30, 30, 30])).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setProfileSharingFeePercentage(30)).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.vesting()).to.be.revertedWith("Function locked")
-            // Ececute unlock function
-            await yfUSDTContract.unlockFunction(0) // setTreasuryWallet()
-            await yfUSDTContract.unlockFunction(1) // setDepositFeeTier2()
-            await yfUSDTContract.unlockFunction(2) // setDepositFeePercentage()
-            await yfUSDTContract.unlockFunction(3) // setProfileSharingFeePercentage()
-            await yfUSDTContract.unlockFunction(4) // vesting()
-            // advance time 23 hours and check if corresponding admin functions is still locked
-            network.provider.send("evm_increaseTime", [86400-(60*60)])
-            await expect(yfUSDTContract.setTreasuryWallet(deployerSigner.address)).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeePercentage([30, 30, 30])).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setProfileSharingFeePercentage(30)).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.vesting()).to.be.revertedWith("Function locked")
-            // advance time again 1 hour and check if corresponding admin functions is unlocked
-            network.provider.send("evm_increaseTime", [60*60])
-            await expect(yfUSDTContract.setTreasuryWallet(deployerSigner.address)).not.to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeeTier2(["100000000", "200000000"])).not.to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeePercentage([30, 30, 30])).not.to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setProfileSharingFeePercentage(30)).not.to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.vesting()).not.to.be.revertedWith("Function locked")
-            // advance time again 1 day and check if corresponding admin functions is locked again
-            network.provider.send("evm_increaseTime", [86400])
-            await expect(yfUSDTContract.setTreasuryWallet(deployerSigner.address)).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setDepositFeePercentage([30, 30, 30])).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.setProfileSharingFeePercentage(30)).to.be.revertedWith("Function locked")
-            await expect(yfUSDTContract.vesting()).to.be.revertedWith("Function locked")
-        })
-
         it("should able to set new treasury wallet correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and new treasury wallet and deploy the contracts
             const [deployerSigner, newTreasuryWalletSigner, _] = await ethers.getSigners()
@@ -723,9 +663,7 @@ describe("yfUSDTv2", () => {
             const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
-            // Unlock function and set new treasury wallet
-            await yfUSDTContract.unlockFunction(0)
-            network.provider.send("evm_increaseTime", [86400])
+            // Set new treasury wallet
             // Check if event for setTreasuryWallet function is logged (by set back original treasury wallet)
             await expect(yfUSDTContract.setTreasuryWallet(newTreasuryWalletAddress))
                 .to.emit(yfUSDTContract, "SetTreasuryWallet")
@@ -748,9 +686,6 @@ describe("yfUSDTv2", () => {
             const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
-            // Unlock the function and advance 1 day
-            await yfUSDTContract.unlockFunction(1)
-            network.provider.send("evm_increaseTime", [86400])
             // Check if function parameter meet the requirements
             await expect(yfUSDTContract.setDepositFeeTier2([0, "10000000000"]))
                 .to.be.revertedWith("Minimun amount cannot be 0")
@@ -774,9 +709,6 @@ describe("yfUSDTv2", () => {
             const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
-            // Unlock function and advance 1 day
-            await yfUSDTContract.unlockFunction(2)
-            network.provider.send("evm_increaseTime", [86400])
             // Check if function parameter meet the requirements (100 = 1%)
             await expect(yfUSDTContract.setDepositFeePercentage([4000, 0, 0]))
                 .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
@@ -803,9 +735,6 @@ describe("yfUSDTv2", () => {
             const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
-            // Unlock function and advance 1 day
-            await yfUSDTContract.unlockFunction(3)
-            network.provider.send("evm_increaseTime", [86400])
             // Check if function parameter meet the requirements
             await expect(yfUSDTContract.setProfileSharingFeePercentage(40))
                 .to.be.revertedWith("Profile sharing fee percentage cannot be more than 40%")
@@ -834,9 +763,6 @@ describe("yfUSDTv2", () => {
             // Check if corresponding function to be reverted if no vesting (these function only available after vesting state)
             await expect(daoVaultUSDT.refund()).to.be.revertedWith("Not in vesting state")
             await expect(yfUSDTContract.approveMigrate()).to.be.revertedWith("Not in vesting state")
-            // Unlock function, advance 1 day and execute vesting function
-            await yfUSDTContract.unlockFunction(4)
-            network.provider.send("evm_increaseTime", [86400])
             await yfUSDTContract.vesting()
             // Check if vesting state is true
             expect(await yfUSDTContract.isVesting()).is.true
@@ -878,9 +804,6 @@ describe("yfUSDTv2", () => {
             ).div(await vaultContract.totalSupply())
             // Transfer some token to Yearn Farmer contract treat as profit
             await token.transfer(yfUSDTContract.address, "100000000")
-            // Unlock function, advance 1 day and execute vesting function
-            await yfUSDTContract.unlockFunction(4)
-            network.provider.send("evm_increaseTime", [86400])
             await yfUSDTContract.vesting()
             // Check if balance token in Yearn Farmer contract correctly after fee
             expect(await token.balanceOf(yfUSDTContract.address)).to.equal(await yfUSDTContract.getSharesValue(deployerSigner.address))

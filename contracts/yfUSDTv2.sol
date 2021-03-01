@@ -40,18 +40,13 @@ contract yfUSDTv2 is ERC20, Ownable {
   bool public isVesting = false;
   IDaoVault public daoVault;
 
-  // Timelock related variable
-  enum Functions {WALLET, FEETIER, D_FEEPERC, W_FEEPERC, VEST}
-  uint256 public constant TIMELOCK = 1 days;
-  mapping(Functions => uint256) public timelock;
-
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
   event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
   event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
   constructor(address _token, address _earn, address _vault, address _treasuryWallet)
-    ERC20("Yearn Farmer USDT", "yfUSDT") {
+    ERC20("Yearn Farmer v2 USDT", "yfUSDTv2") {
       token = IERC20(_token);
       _setupDecimals(6);
 
@@ -60,29 +55,6 @@ contract yfUSDTv2 is ERC20, Ownable {
       _approvePooling();
 
       treasuryWallet = _treasuryWallet;
-  }
-
-  /**
-   * @notice This function revert transaction if admin function is locked
-   * @notice All admin function are locked by default
-   * @dev Run unlockFunction() to unlock the admin function
-   * @param _fn enum Functions
-   */
-  modifier notLocked(Functions _fn) {
-    require(timelock[_fn] != 0 && timelock[_fn] <= block.timestamp 
-      && timelock[_fn] + 1 days >= block.timestamp, "Function locked");
-    _;
-  }
-
-  /**
-   * @notice Unlock admin function. All admin function unlock time is 1 day and valid for 1 day.
-   * @param _fn A number that represent enum Functions
-   * @dev Example: 0 = WALLET, 1 = FEETIER, ..., 4 = VEST
-   * Requirements:
-   * - Only owner of this contract can call this function
-   */
-  function unlockFunction(Functions _fn) external onlyOwner {
-    timelock[_fn] = block.timestamp.add(TIMELOCK);
   }
 
   /**
@@ -104,12 +76,10 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @param _treasuryWallet Address of new treasury wallet
    * Requirements:
    * - Only owner of this contract can call this function
-   * - This contract is not locked
    */
-  function setTreasuryWallet(address _treasuryWallet) external onlyOwner notLocked(Functions.WALLET) {
+  function setTreasuryWallet(address _treasuryWallet) external onlyOwner {
     emit SetTreasuryWallet(treasuryWallet, _treasuryWallet);
     treasuryWallet = _treasuryWallet;
-    timelock[Functions.WALLET] = 0; // Lock back this function
   }
 
   /**
@@ -118,11 +88,10 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @param _depositFeeTier2  Array [tier2 minimun, tier2 maximun], view additional info below
    * Requirements:
    * - Only owner of this contract can call this function
-   * - This contract is not locked
    * - First element in array must greater than 0
    * - Second element must greater than first element
    */
-  function setDepositFeeTier2(uint256[] calldata _depositFeeTier2) external onlyOwner notLocked(Functions.FEETIER) {
+  function setDepositFeeTier2(uint256[] calldata _depositFeeTier2) external onlyOwner {
     require(_depositFeeTier2[0] != 0, "Minimun amount cannot be 0");
     require(_depositFeeTier2[1] > _depositFeeTier2[0], "Maximun amount must greater than minimun amount");
     /**
@@ -133,7 +102,6 @@ contract yfUSDTv2 is ERC20, Ownable {
      */
     emit SetDepositFeeTier2(depositFeeTier2, _depositFeeTier2);
     depositFeeTier2 = _depositFeeTier2;
-    timelock[Functions.FEETIER] = 0; // Lock back this function
   }
 
   /**
@@ -141,10 +109,9 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @param _depositFeePercentage An array of integer, view additional info below
    * Requirements:
    * - Only owner of this contract can call this function
-   * - This contract is not locked
    * - Each of the element in the array must less than 4000 (40%) 
    */
-  function setDepositFeePercentage(uint256[] calldata _depositFeePercentage) external onlyOwner notLocked(Functions.D_FEEPERC) {
+  function setDepositFeePercentage(uint256[] calldata _depositFeePercentage) external onlyOwner {
     /** 
      * _depositFeePercentage content a array of 3 element, representing deposit fee of tier 1, tier 2 and tier 3
      * For example depositFeePercentage is [100, 50, 25]
@@ -157,7 +124,6 @@ contract yfUSDTv2 is ERC20, Ownable {
     );
     emit SetDepositFeePercentage(depositFeePercentage, _depositFeePercentage);
     depositFeePercentage = _depositFeePercentage;
-    timelock[Functions.D_FEEPERC] = 0; // Lock back this function
   }
 
   /**
@@ -165,14 +131,12 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @param _percentage Integar that represent actual percentage
    * Requirements:
    * - Only owner of this contract can call this function
-   * - This contract is not locked
    * - Amount set must less than 40 (40%)
    */
-  function setProfileSharingFeePercentage(uint256 _percentage) public onlyOwner notLocked(Functions.W_FEEPERC) {
+  function setProfileSharingFeePercentage(uint256 _percentage) public onlyOwner {
     require(_percentage < 40, "Profile sharing fee percentage cannot be more than 40%");
     emit SetProfileSharingFeePercentage(profileSharingFeePercentage, _percentage);
     profileSharingFeePercentage = _percentage;
-    timelock[Functions.W_FEEPERC] = 0; // Lock back this function
   }
 
   /**
@@ -374,10 +338,9 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @notice Only allowed users to do refund from this contract
    * Requirements:
    * - Only owner of this contract can call this function
-   * - This contract is not locked
    * - This contract is not in vesting state
    */
-  function vesting() external onlyOwner notLocked(Functions.VEST) {
+  function vesting() external onlyOwner {
     require(isVesting == false, "Already in vesting state");
 
     // Withdraw all funds from Yearn earn and vault contract
