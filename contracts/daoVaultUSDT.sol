@@ -28,12 +28,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
  * function approveMigrate()
  * -> Approve Vault to migrate all funds to new strategy
  */
-interface IStrategy {
-    function deposit(uint256[] memory _amounts) external;
-    function withdraw(uint256[] memory _shares) external;
-    function refund(uint256 _shares) external;
-    function balanceOf(address _address) external view returns (uint256);
-}
+import "../interfaces/IStrategy.sol";
 
 /// @title Contract to interact between user and strategy, and distribute daoToken
 contract daoVaultUSDT is ERC20, Ownable {
