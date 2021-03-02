@@ -31,7 +31,13 @@ contract yfUSDTv2 is ERC20, Ownable {
   mapping (address => uint256) private vaultDepositBalance;
   uint256 public pool;
 
-  address public treasuryWallet; // Address that collecting fees
+  // Address to collect fees
+  address public treasuryWallet;
+  address public communityWallet;
+  uint256 public constant DENOMINATOR = 10000;
+  uint256 public constant treasuryFee = 5000; // 50% on profile sharing fee
+  uint256 public constant communityFee = 5000; // 50% on profile sharing fee
+
 
   uint256[] public depositFeeTier2 = [10000e6+1, 100000e6]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
   uint256[] public depositFeePercentage = [100, 50, 25]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.5%, 0.25%]
@@ -41,11 +47,12 @@ contract yfUSDTv2 is ERC20, Ownable {
   IDaoVault public daoVault;
 
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
+  event SetCommunityWallet(address indexed oldCommunityWallet, address indexed newCommunityWallet);
   event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
   event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
-  constructor(address _token, address _earn, address _vault, address _treasuryWallet)
+  constructor(address _token, address _earn, address _vault, address _treasuryWallet, address _communityWallet)
     ERC20("Yearn Farmer v2 USDT", "yfUSDTv2") {
       token = IERC20(_token);
       _setupDecimals(6);
@@ -55,6 +62,7 @@ contract yfUSDTv2 is ERC20, Ownable {
       _approvePooling();
 
       treasuryWallet = _treasuryWallet;
+      communityWallet = _communityWallet;
   }
 
   /**
@@ -80,6 +88,17 @@ contract yfUSDTv2 is ERC20, Ownable {
   function setTreasuryWallet(address _treasuryWallet) external onlyOwner {
     emit SetTreasuryWallet(treasuryWallet, _treasuryWallet);
     treasuryWallet = _treasuryWallet;
+  }
+
+  /**
+   * @notice Set new community wallet address in contract
+   * @param _communityWallet Address of new community wallet
+   * Requirements:
+   * - Only owner of this contract can call this function
+   */
+  function setCommunityWallet(address _communityWallet) external onlyOwner {
+    emit SetCommunityWallet(communityWallet, _communityWallet);
+    communityWallet = _communityWallet;
   }
 
   /**
@@ -227,7 +246,7 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     // Deposit to Yearn Earn after fee
     if (_earnAmount > 0) {
-      _earnDepositFee = _earnAmount.mul(_depositFeePercentage).div(10000);
+      _earnDepositFee = _earnAmount.mul(_depositFeePercentage).div(DENOMINATOR);
       _earnAmount = _earnAmount.sub(_earnDepositFee);
       earn.deposit(_earnAmount);
       earnDepositBalance[tx.origin] = earnDepositBalance[tx.origin].add(_earnAmount);
@@ -235,7 +254,7 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     // Deposit to Yearn Vault after fee
     if (_vaultAmount > 0) {
-      _vaultDepositFee = _vaultAmount.mul(_depositFeePercentage).div(10000);
+      _vaultDepositFee = _vaultAmount.mul(_depositFeePercentage).div(DENOMINATOR);
       _vaultAmount = _vaultAmount.sub(_vaultDepositFee);
       vault.deposit(_vaultAmount);
       vaultDepositBalance[tx.origin] = vaultDepositBalance[tx.origin].add(_vaultAmount);
@@ -294,9 +313,10 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     if (_r > _d) {
       uint256 _p = _r.sub(_d); // Profit
-      uint256 _fees = _p.mul(profileSharingFeePercentage).div(100);
-      token.safeTransfer(tx.origin, _r.sub(_fees));
-      token.safeTransfer(treasuryWallet, _fees);
+      uint256 _fee = _p.mul(profileSharingFeePercentage).div(100);
+      token.safeTransfer(tx.origin, _r.sub(_fee));
+      token.safeTransfer(treasuryWallet, _fee.mul(treasuryFee).div(DENOMINATOR));
+      token.safeTransfer(communityWallet, _fee.mul(communityFee).div(DENOMINATOR));
     } else {
       token.safeTransfer(tx.origin, _r);
     }
@@ -324,9 +344,10 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     if (_r > _d) {
       uint256 _p = _r.sub(_d); // Profit
-      uint256 _fees = _p.mul(profileSharingFeePercentage).div(100);
-      token.safeTransfer(tx.origin, _r.sub(_fees));
-      token.safeTransfer(treasuryWallet, _fees);
+      uint256 _fee = _p.mul(profileSharingFeePercentage).div(100);
+      token.safeTransfer(tx.origin, _r.sub(_fee));
+      token.safeTransfer(treasuryWallet, _fee.mul(treasuryFee).div(DENOMINATOR));
+      token.safeTransfer(communityWallet, _fee.mul(communityFee).div(DENOMINATOR));
     } else {
       token.safeTransfer(tx.origin, _r);
     }
@@ -358,7 +379,8 @@ contract yfUSDTv2 is ERC20, Ownable {
     if (token.balanceOf(address(this)) > pool) {
       uint256 _profit = token.balanceOf(address(this)).sub(pool);
       uint256 _fee = _profit.mul(profileSharingFeePercentage).div(100);
-      token.safeTransfer(treasuryWallet, _fee);
+      token.safeTransfer(treasuryWallet, _fee.mul(treasuryFee).div(DENOMINATOR));
+      token.safeTransfer(communityWallet, _fee.mul(communityFee).div(DENOMINATOR));
     }
     pool = 0;
   }
