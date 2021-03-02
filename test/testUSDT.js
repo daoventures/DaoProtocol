@@ -12,6 +12,7 @@ const yVaultAddress = "0x2f08119C6f07c006695E079AAFc638b8789FAf18"
 const unlockedAddress = "0x1062a747393198f70F71ec65A582423Dba7E5Ab3"
 
 const treasuryWalletAddress = "0x59E83877bD248cBFe392dbB5A8a29959bcb48592"
+const communityWalletAddress = "0xb1AD074E17AD59f2103A8832DADE917388D6C50D"
 
 describe("yfUSDTv2", () => {
     beforeEach(async () => {
@@ -42,8 +43,8 @@ describe("yfUSDTv2", () => {
         // Get sender address and deploy the contracts
         const [senderSigner, _] = await ethers.getSigners()
         const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-        const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+        const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+        const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
         const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
         await yfUSDTContract.setVault(daoVaultUSDT.address)
         // Check if execute set vault function again to be reverted
@@ -61,6 +62,8 @@ describe("yfUSDTv2", () => {
         expect(await yfUSDTContract.pool()).to.equal(0)
         // Check if treasury wallet address match given address in Yearn Farmer contract
         expect(await yfUSDTContract.treasuryWallet()).to.equal(treasuryWalletAddress)
+        // Check if community wallet address match given address in Yearn Farmer contract
+        expect(await yfUSDTContract.communityWallet()).to.equal(communityWalletAddress)
         // Check if initial tier2 of deposit fee is 10001e6 <= tokenAmount <= 100000e6 in Yearn Farmer contract (More details in contract)
         expect(await yfUSDTContract.depositFeeTier2(0)).to.equal("10000000001")
         expect(await yfUSDTContract.depositFeeTier2(1)).to.equal("100000000000")
@@ -75,8 +78,8 @@ describe("yfUSDTv2", () => {
         // Check if daoVaultUSDT contract address set correctly in Yearn Farmer contract
         expect(await yfUSDTContract.daoVault()).to.equal(daoVaultUSDT.address)
         // Check daoUSDT token is set properly in daoVaultUSDT contract
-        expect(await daoVaultUSDT.name()).to.equal("DAO Tether USDT")
-        expect(await daoVaultUSDT.symbol()).to.equal("daoUSDT")
+        expect(await daoVaultUSDT.name()).to.equal("DAO Vault Medium USDT")
+        expect(await daoVaultUSDT.symbol()).to.equal("dvmUSDT")
         expect(await daoVaultUSDT.decimals()).to.equal(6)
         // Check if strategy match given contract in daoVaultUSDT contract
         expect(await daoVaultUSDT.strategy()).to.equal(yfUSDTContract.address)
@@ -95,8 +98,8 @@ describe("yfUSDTv2", () => {
             // Get sender address and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some USDT to client
@@ -131,8 +134,8 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check deduct deposit fee correctly in tier 1
@@ -165,8 +168,8 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some USDT to client
@@ -218,13 +221,16 @@ describe("yfUSDTv2", () => {
         //     // Get signer and address of sender and deploy the contracts
         //     const [senderSigner, _] = await ethers.getSigners()
         //     const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-        //     const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+        //     const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
         //     const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
         //     await yfUSDTContract.setVault(daoVaultUSDT.address)
         //     // Get treasury wallet USDT balance before deposit
         //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
         //     const treasuryWalletTokenBalBeforeDeposit = await token.balanceOf(treasuryWalletAddress)
+        //     // Get community wallet USDT balance before deposit
+        //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
+        //     const communityWalletTokenBalBeforeDeposit = await token.balanceOf(communityWalletAddress)
         //     // Deposit 100 to Yearn Earn contract and 200 to Yearn Vault contract
         //     await token.approve(yfUSDTContract.address, "1000000000")
         //     await daoVaultUSDT.deposit(["100000000", "200000000"])
@@ -251,18 +257,19 @@ describe("yfUSDTv2", () => {
         //         .add(earnExampleWithdrawAmount.sub(earnFee))
         //         .add(vaultExampleWithdrawAmount.sub(vaultFee))
         //     )
-        //     // Check if all fees transfer to treasury wallet correctly
-        //     const depositFees = Math.floor((100000000 + 200000000) * 1 / 100) // 1% deposit fee for tier 1
-        //     const profileSharingFees = earnFee.add(vaultFee)
+        //     // Check if all fees transfer to treasury and community wallet correctly
+        //     const depositFees = Math.floor((100000000 + 200000000) * 1 / 100) // 1% deposit fee for tier 1, for treasury wallet only
+        //     const profileSharingFees = (earnFee.add(vaultFee)).mul(50).div(100) // 50% split between treasury and community wallet
         //     expect(await token.balanceOf(treasuryWalletAddress)).to.equal(treasuryWalletTokenBalBeforeDeposit.add(profileSharingFees.add(depositFees)))
+        //     expect(await token.balanceOf(communityWalletAddress)).to.equal(communityWalletTokenBalBeforeDeposit.add(profileSharingFees))
         // })
 
         it("should able to get earn and vault deposit amount correctly", async () => {
             // Get signer and address of sender and client and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Deposit 100 to Yearn Earn contract and 200 to Yearn Vault contract
@@ -291,8 +298,8 @@ describe("yfUSDTv2", () => {
              // Get signer and address of sender and client and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some token to client account
@@ -419,8 +426,8 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and client and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Approve Yearn Farmer to transfer token from sender
@@ -466,8 +473,8 @@ describe("yfUSDTv2", () => {
             // Get address of owner and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some token to client
@@ -507,8 +514,8 @@ describe("yfUSDTv2", () => {
             // Get address of owner and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some USDT to Yearn Farmer contract as profit from Yearn contract
@@ -543,8 +550,8 @@ describe("yfUSDTv2", () => {
             // Get address of owner and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", senderSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if Yearn Earn and Vault contract can deposit a huge amount of USDT from yfUSDT contract
@@ -561,8 +568,8 @@ describe("yfUSDTv2", () => {
             // Get address of owner and new owner and deploy the contracts
             const [ownerSigner, newOwnerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", ownerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", ownerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", ownerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if contract ownership is owner before transfer
@@ -609,8 +616,8 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Set pending strategy
@@ -657,33 +664,49 @@ describe("yfUSDTv2", () => {
         it("should able to set new treasury wallet correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and new treasury wallet and deploy the contracts
             const [deployerSigner, newTreasuryWalletSigner, _] = await ethers.getSigners()
-            const newTreasuryWalletAddress = await newTreasuryWalletSigner.getAddress()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Set new treasury wallet
-            // Check if event for setTreasuryWallet function is logged (by set back original treasury wallet)
-            await expect(yfUSDTContract.setTreasuryWallet(newTreasuryWalletAddress))
+            // Check if event for setTreasuryWallet function is logged
+            await expect(yfUSDTContract.setTreasuryWallet(newTreasuryWalletSigner.address))
                 .to.emit(yfUSDTContract, "SetTreasuryWallet")
-                .withArgs(treasuryWalletAddress, newTreasuryWalletAddress)
+                .withArgs(treasuryWalletAddress, newTreasuryWalletSigner.address)
             // Check if new treasury wallet is set to the contract
-            expect(await yfUSDTContract.treasuryWallet()).to.equal(newTreasuryWalletAddress)
+            expect(await yfUSDTContract.treasuryWallet()).to.equal(newTreasuryWalletSigner.address)
             // Check if new treasury wallet receive fees
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, deployerSigner)
             await token.approve(yfUSDTContract.address, "1000000000")
             await daoVaultUSDT.deposit(["100000000", "200000000"])
             // - 100 + 200 < 300 within deposit fee tier 1 hence fee = 1%
-            expect(await token.balanceOf(newTreasuryWalletAddress)).to.equal("3000000")
+            expect(await token.balanceOf(newTreasuryWalletSigner.address)).to.equal("3000000")
+        })
+
+        it("should able to set new community wallet correctly in Yearn Farmer contract", async () => {
+            // Get address of deployer and new community wallet and deploy the contracts
+            const [deployerSigner, newCommunityWalletSigner, _] = await ethers.getSigners()
+            const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            await yfUSDTContract.setVault(daoVaultUSDT.address)
+            // Set new community wallet
+            // Check if event for setCommunityWallet function is logged
+            await expect(yfUSDTContract.setCommunityWallet(newCommunityWalletSigner.address))
+                .to.emit(yfUSDTContract, "SetCommunityWallet")
+                .withArgs(communityWalletAddress, newCommunityWalletSigner.address)
+            // Check if new community wallet is set to the contract
+            expect(await yfUSDTContract.communityWallet()).to.equal(newCommunityWalletSigner.address)
         })
 
         it("should able to set new deposit fee tier correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements
@@ -705,8 +728,8 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements (100 = 1%)
@@ -731,8 +754,8 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements
@@ -750,8 +773,8 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Deposit into Yearn Farmer through daoVaultUSDT
@@ -778,12 +801,12 @@ describe("yfUSDTv2", () => {
             expect(await yfUSDTContract.pool()).to.equal(0)
         })
 
-        it("should send profit to treasury wallet correctly after vesting state in Yearn Farmer contract", async () => {
+        it("should send profit to treasury and community wallet correctly after vesting state in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress)
-            const DaoVaultUSDT = await ethers.getContractFactory("daoVaultUSDT", deployerSigner)
+            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
             const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Deposit into Yearn Farmer through daoVaultUSDT
@@ -791,6 +814,7 @@ describe("yfUSDTv2", () => {
             await token.approve(yfUSDTContract.address, "1000000000")
             await daoVaultUSDT.deposit(["100000000", "200000000"])
             const treasuryWalletBalanceBeforeVesting = await token.balanceOf(treasuryWalletAddress)
+            const communityWalletBalanceBeforeVesting = await token.balanceOf(communityWalletAddress)
             // Get off-chain Yearn earn and vault actual withdraw amount
             const earnDepositBalance = await yfUSDTContract.getEarnDepositBalance(deployerSigner.address)
             const vaultDepositBalance = await yfUSDTContract.getVaultDepositBalance(deployerSigner.address)
@@ -807,9 +831,11 @@ describe("yfUSDTv2", () => {
             await yfUSDTContract.vesting()
             // Check if balance token in Yearn Farmer contract correctly after fee
             expect(await token.balanceOf(yfUSDTContract.address)).to.equal(await yfUSDTContract.getSharesValue(deployerSigner.address))
-            // Check if amount fee transfer to treasury wallet correctly
+            // Check if amount fee transfer to treasury and community wallet correctly (50% split)
             const profit = (await token.balanceOf(yfUSDTContract.address)).sub(offChainActualEarnWithdrawAmount.add(offChainActualVaultWithdrawAmount))
-            expect(await token.balanceOf(treasuryWalletAddress)).to.gte(treasuryWalletBalanceBeforeVesting.add(profit.mul(10).div(100)))
+            const profileSharingFee = profit.mul(10).div(100)
+            expect(await token.balanceOf(treasuryWalletAddress)).to.gte(treasuryWalletBalanceBeforeVesting.add(profileSharingFee.mul(50).div(100)))
+            expect(await token.balanceOf(communityWalletAddress)).to.gte(communityWalletBalanceBeforeVesting.add(profileSharingFee.mul(50).div(100)))
         })
     })
 })
