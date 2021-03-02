@@ -31,7 +31,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../interfaces/IStrategy.sol";
 
 /// @title Contract to interact between user and strategy, and distribute daoToken
-contract DAOVaultLowUSDT is ERC20, Ownable {
+contract DAOVaultMediumUSDT is ERC20, Ownable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -46,7 +46,7 @@ contract DAOVaultLowUSDT is ERC20, Ownable {
 
     event MigrateFunds(address indexed fromStrategy, address indexed toStrategy, uint256 amount);
 
-    constructor(address _token, address _strategy) ERC20("DAO Vault Low USDT", "dvlUSDT") {
+    constructor(address _token, address _strategy) ERC20("DAO Vault Medium USDT", "dvmUSDT") {
         token = IERC20(_token);
         _setupDecimals(6);
         strategy = IStrategy(_strategy);
