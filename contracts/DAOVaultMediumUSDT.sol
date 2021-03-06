@@ -30,7 +30,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
  */
 import "../interfaces/IStrategy.sol";
 
-/// @title Contract to interact between user and strategy, and distribute daoToken
+/// @title Contract to interact between user and strategy, and distribute daoToken to user
 contract DAOVaultMediumUSDT is ERC20, Ownable {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -91,7 +91,7 @@ contract DAOVaultMediumUSDT is ERC20, Ownable {
      * @notice This function usually only available when strategy in vesting state
      * Requirements:
      * - Only EOA account can call this function
-     * - Amount daoToken of user must greater than 0
+     * - Amount dvmToken of user must greater than 0
      */
     function refund() external {
         require(address(msg.sender).isContract() == false, "Only EOA");
@@ -119,16 +119,6 @@ contract DAOVaultMediumUSDT is ERC20, Ownable {
     }
 
     /**
-     * @notice Set new strategy
-     * @dev This function only call from function migrateFunds()
-     */
-    function _setStrategy() private {
-        strategy = IStrategy(pendingStrategy);
-        pendingStrategy = address(0);
-        canSetPendingStrategy = true;
-    }
-
-    /**
      * @notice Unlock function migrateFunds()
      * Requirements:
      * - Only owner of this contract call this function
@@ -142,13 +132,14 @@ contract DAOVaultMediumUSDT is ERC20, Ownable {
      * @notice Migrate all funds from old strategy to new strategy
      * Requirements:
      * - Only owner of this contract call this function
-     * - This contract is not locked
+     * - Calling this function within unlock time
      * - Pending strategy is set
      */
     function migrateFunds() external onlyOwner {
         require(unlockTime <= block.timestamp && unlockTime + 1 days >= block.timestamp, "Function locked");
         require(token.balanceOf(address(strategy)) > 0, "No balance to migrate");
         require(pendingStrategy != address(0), "No pendingStrategy");
+
         uint256 _amount = token.balanceOf(address(strategy));
         emit MigrateFunds(address(strategy), pendingStrategy, _amount);
 
@@ -157,7 +148,10 @@ contract DAOVaultMediumUSDT is ERC20, Ownable {
         IERC20 oldStrategyToken = IERC20(address(strategy));
         oldStrategyToken.safeTransfer(address(strategy), oldStrategyToken.balanceOf(address(this)));
 
-        _setStrategy();
+        strategy = IStrategy(pendingStrategy);
+        pendingStrategy = address(0);
+        canSetPendingStrategy = true;
+
         unlockTime = 0; // Lock back this function
     }
 }
