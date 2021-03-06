@@ -12,6 +12,7 @@ import "../interfaces/IYvault.sol";
 import "../interfaces/IDaoVault.sol";
 
 /// @title Contract for yield token in Yearn Finance contracts
+/// @dev This contract should not be reused after vesting state
 contract yfUSDTv2 is ERC20, Ownable {
   /**
    * @dev Inherit from Ownable contract enable contract ownership transferable
@@ -34,14 +35,16 @@ contract yfUSDTv2 is ERC20, Ownable {
   // Address to collect fees
   address public treasuryWallet;
   address public communityWallet;
+
+  uint256[] public depositFeeTier2 = [50000e6+1, 100000e6]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 50001 to 100000
+  uint256 public customDepositFeeTier = 1000000e6;
+
   uint256 public constant DENOMINATOR = 10000;
+  uint256[] public depositFeePercentage = [100, 75, 50]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.75%, 0.5%]
+  uint256 public customDepositFeePercentage = 25;
+  uint256 public profileSharingFeePercentage = 1000;
   uint256 public constant treasuryFee = 5000; // 50% on profile sharing fee
   uint256 public constant communityFee = 5000; // 50% on profile sharing fee
-
-
-  uint256[] public depositFeeTier2 = [10000e6+1, 100000e6]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 10001 to 100000
-  uint256[] public depositFeePercentage = [100, 50, 25]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.5%, 0.25%]
-  uint256 public profileSharingFeePercentage = 10;
 
   bool public isVesting = false;
   IDaoVault public daoVault;
@@ -50,6 +53,8 @@ contract yfUSDTv2 is ERC20, Ownable {
   event SetCommunityWallet(address indexed oldCommunityWallet, address indexed newCommunityWallet);
   event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
   event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
+  event SetCustomDepositFeeTier(uint256 oldCustomDepositFeeTier, uint256 newCustomDepositFeeTier);
+  event SetCustomDepositFeePercentage(uint256 oldCustomDepositFeePercentage, uint256 newCustomDepositFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
   constructor(address _token, address _earn, address _vault, address _treasuryWallet, address _communityWallet)
@@ -67,7 +72,8 @@ contract yfUSDTv2 is ERC20, Ownable {
 
   /**
    * @notice Set Vault that interact with this contract
-   * @dev This function call after deploy Vault contract and only able to call once 
+   * @dev This function call after deploy Vault contract and only able to call once
+   * @dev This function is needed only if this is the first strategy to connect with Vault
    * @param _address Address of Vault
    * Requirements:
    * - Only owner of this contract can call this function
@@ -102,7 +108,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Function to set deposit fee tier
+   * @notice Set deposit fee tier
    * @notice Details for deposit fee tier can view at deposit() function below
    * @param _depositFeeTier2  Array [tier2 minimun, tier2 maximun], view additional info below
    * Requirements:
@@ -133,8 +139,8 @@ contract yfUSDTv2 is ERC20, Ownable {
   function setDepositFeePercentage(uint256[] calldata _depositFeePercentage) external onlyOwner {
     /** 
      * _depositFeePercentage content a array of 3 element, representing deposit fee of tier 1, tier 2 and tier 3
-     * For example depositFeePercentage is [100, 50, 25]
-     * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.5% and Tier 3 = 0.25%
+     * For example depositFeePercentage is [100, 75, 50]
+     * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.75% and Tier 3 = 0.5%
      */
     require(
       _depositFeePercentage[0] < 4000 &&
@@ -146,14 +152,40 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Set profile sharing(activate when withdraw with profit) fee in percentage
-   * @param _percentage Integar that represent actual percentage
+   * @notice Set deposit fee tier
+   * @param _customDepositFeeTier Integar
    * Requirements:
    * - Only owner of this contract can call this function
-   * - Amount set must less than 40 (40%)
+   * - Custom deposit fee tier must greater than deposit fee tier 2
+   */
+  function setCustomDepositFeeTier(uint256 _customDepositFeeTier) external onlyOwner {
+    require(_customDepositFeeTier > depositFeeTier2[1], "Custom deposit fee tier must greater than tier 2");
+    emit SetCustomDepositFeeTier(customDepositFeeTier, _customDepositFeeTier);
+    customDepositFeeTier = _customDepositFeeTier;
+  }
+
+  /**
+   * @notice Set custom deposit fee
+   * @param _percentage Integar (100 = 1%)
+   * Requirements:
+   * - Only owner of this contract can call this function
+   * - Amount set must less than deposit fee for tier 2
+   */
+  function setCustomDepositFeePercentage(uint256 _percentage) public onlyOwner {
+    require(_percentage < depositFeePercentage[2], "Custom deposit fee percentage cannot be more than tier 2");
+    emit SetCustomDepositFeePercentage(customDepositFeePercentage, _percentage);
+    customDepositFeePercentage = _percentage;
+  }
+
+  /**
+   * @notice Set profile sharing fee
+   * @param _percentage Integar (100 = 1%)
+   * Requirements:
+   * - Only owner of this contract can call this function
+   * - Amount set must less than 4000 (40%)
    */
   function setProfileSharingFeePercentage(uint256 _percentage) public onlyOwner {
-    require(_percentage < 40, "Profile sharing fee percentage cannot be more than 40%");
+    require(_percentage < 4000, "Profile sharing fee percentage cannot be more than 40%");
     emit SetProfileSharingFeePercentage(profileSharingFeePercentage, _percentage);
     profileSharingFeePercentage = _percentage;
   }
@@ -200,12 +232,12 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Deposit token into Yearn Earn and Vault contract
+   * @notice Deposit token into Yearn Earn and Vault contracts
    * @param _amounts amount of earn and vault to deposit in list: [earn deposit amount, vault deposit amount]
    * Requirements:
    * - Sender must approve this contract to transfer token from sender to this contract
    * - This contract is not in vesting state
-   * - Only daoVault can call this function
+   * - Only Vault can call this function
    * - Either first element(earn deposit) or second element(earn deposit) in list must greater than 0
    */
   function deposit(uint256[] memory _amounts) public {
@@ -224,23 +256,29 @@ contract yfUSDTv2 is ERC20, Ownable {
     /**
      * v2: Deposit fees
      * depositFeeTier2 is used to set each tier minimun and maximun
-     * For example depositFeeTier2 is [10000, 100000],
-     * Tier 1 = _depositAmount < 10001
-     * Tier 2 = 10001 <= _depositAmount <= 100000
+     * For example depositFeeTier2 is [50000, 100000],
+     * Tier 1 = _depositAmount < 50001
+     * Tier 2 = 50001 <= _depositAmount <= 100000
      * Tier 3 = _depositAmount > 100000
      *
      * depositFeePercentage is used to set each tier deposit fee percentage
-     * For example depositFeePercentage is [100, 50, 25]
-     * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.5%, Tier 3 = 0.25%
+     * For example depositFeePercentage is [100, 75, 50]
+     * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.75%, Tier 3 = 0.5%
+     *
+     * customDepositFeeTier is set before deposit fee tier 3
+     * customDepositFeepercentage will be used if _depositAmount over customDepositFeeTier before deposit fee tier 3
      */
     if (_depositAmount < depositFeeTier2[0]) {
-    // Tier 1
+      // Tier 1
       _depositFeePercentage = depositFeePercentage[0];
     } else if (_depositAmount >= depositFeeTier2[0] && _depositAmount <= depositFeeTier2[1]) {
-    // Tier 2
+      // Tier 2
       _depositFeePercentage = depositFeePercentage[1];
+    } else if (_depositAmount >= customDepositFeeTier) {
+      // Custom tier
+      _depositFeePercentage = customDepositFeePercentage;
     } else {
-    // Tier 3
+      // Tier 3
       _depositFeePercentage = depositFeePercentage[2];
     }
 
@@ -272,11 +310,11 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Withdraw from Yearn Earn and Vault contract
+   * @notice Withdraw from Yearn Earn and Vault contracts
    * @param _shares amount of earn and vault to withdraw in list: [earn withdraw amount, vault withdraw amount]
    * Requirements:
    * - This contract is not in vesting state
-   * - Only daoVault can call this function
+   * - Only Vault can call this function
    */
   function withdraw(uint256[] memory _shares) external {
     require(isVesting == false, "Contract in vesting state");
@@ -296,7 +334,6 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @dev Only call within function withdraw()
    * @param _shares Amount of shares to withdraw
    * Requirements:
-   * - Contract is not in vesting state
    * - Amount input must less than or equal to sender current total amount of earn deposit in contract
    */
   function _withdrawEarn(uint256 _shares) private {
@@ -313,7 +350,7 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     if (_r > _d) {
       uint256 _p = _r.sub(_d); // Profit
-      uint256 _fee = _p.mul(profileSharingFeePercentage).div(100);
+      uint256 _fee = _p.mul(profileSharingFeePercentage).div(DENOMINATOR);
       token.safeTransfer(tx.origin, _r.sub(_fee));
       token.safeTransfer(treasuryWallet, _fee.mul(treasuryFee).div(DENOMINATOR));
       token.safeTransfer(communityWallet, _fee.mul(communityFee).div(DENOMINATOR));
@@ -327,7 +364,6 @@ contract yfUSDTv2 is ERC20, Ownable {
    * @dev Only call within function withdraw()
    * @param _shares Amount of shares to withdraw
    * Requirements:
-   * - Contract is not in vesting state
    * - Amount input must less than or equal to sender current total amount of vault deposit in contract
    */
   function _withdrawVault(uint256 _shares) private {
@@ -344,7 +380,7 @@ contract yfUSDTv2 is ERC20, Ownable {
 
     if (_r > _d) {
       uint256 _p = _r.sub(_d); // Profit
-      uint256 _fee = _p.mul(profileSharingFeePercentage).div(100);
+      uint256 _fee = _p.mul(profileSharingFeePercentage).div(DENOMINATOR);
       token.safeTransfer(tx.origin, _r.sub(_fee));
       token.safeTransfer(treasuryWallet, _fee.mul(treasuryFee).div(DENOMINATOR));
       token.safeTransfer(communityWallet, _fee.mul(communityFee).div(DENOMINATOR));
@@ -354,9 +390,8 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Vesting this contract, withdraw all the token from Yearn contract
-   * @notice Disabled the deposit and withdraw functions for public
-   * @notice Only allowed users to do refund from this contract
+   * @notice Vesting this contract, withdraw all the token from Yearn contracts
+   * @notice Disabled the deposit and withdraw functions for public, only allowed users to do refund from this contract
    * Requirements:
    * - Only owner of this contract can call this function
    * - This contract is not in vesting state
@@ -364,7 +399,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   function vesting() external onlyOwner {
     require(isVesting == false, "Already in vesting state");
 
-    // Withdraw all funds from Yearn earn and vault contract
+    // Withdraw all funds from Yearn Earn and Vault contracts
     isVesting = true;
     uint256 _earnBalance = earn.balanceOf(address(this));
     uint256 _vaultBalance = vault.balanceOf(address(this));
@@ -375,10 +410,10 @@ contract yfUSDTv2 is ERC20, Ownable {
       vault.withdraw(_vaultBalance);
     }
 
-    // Collect all profit
+    // Collect all profits
     if (token.balanceOf(address(this)) > pool) {
       uint256 _profit = token.balanceOf(address(this)).sub(pool);
-      uint256 _fee = _profit.mul(profileSharingFeePercentage).div(100);
+      uint256 _fee = _profit.mul(profileSharingFeePercentage).div(DENOMINATOR);
       token.safeTransfer(treasuryWallet, _fee.mul(treasuryFee).div(DENOMINATOR));
       token.safeTransfer(communityWallet, _fee.mul(communityFee).div(DENOMINATOR));
     }
@@ -386,9 +421,9 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Get token amount based on daoUSDT hold by account after contract in vesting state
+   * @notice Get token amount based on daoToken hold by account after contract in vesting state
    * @param _address Address of account to check
-   * @return Token amount based on on daoUSDT hold by account. 0 if contract is not in vesting state
+   * @return Token amount based on on daoToken hold by account. 0 if contract is not in vesting state
    */
   function getSharesValue(address _address) external view returns (uint256) {
     if (isVesting == false) {
@@ -404,11 +439,11 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Refund all tokens based on daoUSDT hold by sender
+   * @notice Refund all tokens based on daoToken hold by sender
    * @notice Only available after contract in vesting state
    * Requirements:
    * - This contract is in vesting state
-   * - Only daoVault can call this function
+   * - Only Vault can call this function
    */
   function refund(uint256 _shares) external {
     require(isVesting == true, "Not in vesting state");
@@ -420,7 +455,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Approve daoVault to migrate funds from this contract
+   * @notice Approve Vault to migrate funds from this contract
    * @notice Only available after contract in vesting state
    * Requirements:
    * - Only owner of this contract can call this function
@@ -430,7 +465,7 @@ contract yfUSDTv2 is ERC20, Ownable {
     require(isVesting == true, "Not in vesting state");
 
     if (token.allowance(address(this), address(daoVault)) == 0) {
-      token.safeApprove(address(daoVault), token.balanceOf(address(this)));
+      token.safeApprove(address(daoVault), MAX_UNIT);
     }
   }
 }
