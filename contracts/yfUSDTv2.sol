@@ -24,24 +24,24 @@ contract yfUSDTv2 is ERC20, Ownable {
   using Address for address;
   using SafeMath for uint256;
 
-  IERC20 public token;
-  IYearn public earn;
-  IYvault public vault;
+  IERC20 public token = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
+  IYearn public earn = IYearn(0xE6354ed5bC4b393a5Aad09f21c46E101e692d447);
+  IYvault public vault = IYvault(0x2f08119C6f07c006695E079AAFc638b8789FAf18);
   uint256 private constant MAX_UNIT = 2**256 - 2;
   mapping (address => uint256) private earnDepositBalance;
   mapping (address => uint256) private vaultDepositBalance;
   uint256 public pool;
 
   // Address to collect fees
-  address public treasuryWallet;
-  address public communityWallet;
+  address public treasuryWallet = 0x59E83877bD248cBFe392dbB5A8a29959bcb48592;
+  address public communityWallet = 0xdd6c35aFF646B2fB7d8A8955Ccbe0994409348d0;
 
-  uint256[] public depositFeeTier2 = [50000e6+1, 100000e6]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 50001 to 100000
-  uint256 public customDepositFeeTier = 1000000e6;
+  uint256[] public networkFeeTier2 = [50000e6+1, 100000e6]; // Represent [tier2 minimun, tier2 maximun], initial value represent Tier 2 from 50001 to 100000
+  uint256 public customNetworkFeeTier = 1000000e6;
 
   uint256 public constant DENOMINATOR = 10000;
-  uint256[] public depositFeePercentage = [100, 75, 50]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.75%, 0.5%]
-  uint256 public customDepositFeePercentage = 25;
+  uint256[] public networkFeePercentage = [100, 75, 50]; // Represent [Tier 1, Tier 2, Tier 3], initial value represent [1%, 0.75%, 0.5%]
+  uint256 public customNetworkFeePercentage = 25;
   uint256 public profileSharingFeePercentage = 1000;
   uint256 public constant treasuryFee = 5000; // 50% on profile sharing fee
   uint256 public constant communityFee = 5000; // 50% on profile sharing fee
@@ -51,23 +51,15 @@ contract yfUSDTv2 is ERC20, Ownable {
 
   event SetTreasuryWallet(address indexed oldTreasuryWallet, address indexed newTreasuryWallet);
   event SetCommunityWallet(address indexed oldCommunityWallet, address indexed newCommunityWallet);
-  event SetDepositFeeTier2(uint256[] oldDepositFeeTier2, uint256[] newDepositFeeTier2);
-  event SetDepositFeePercentage(uint256[] oldDepositFeePercentage, uint256[] newDepositFeePercentage);
-  event SetCustomDepositFeeTier(uint256 oldCustomDepositFeeTier, uint256 newCustomDepositFeeTier);
-  event SetCustomDepositFeePercentage(uint256 oldCustomDepositFeePercentage, uint256 newCustomDepositFeePercentage);
+  event SetNetworkFeeTier2(uint256[] oldNetworkFeeTier2, uint256[] newNetworkFeeTier2);
+  event SetNetworkFeePercentage(uint256[] oldNetworkFeePercentage, uint256[] newNetworkFeePercentage);
+  event SetCustomNetworkFeeTier(uint256 oldCustomNetworkFeeTier, uint256 newCustomNetworkFeeTier);
+  event SetCustomNetworkFeePercentage(uint256 oldCustomNetworkFeePercentage, uint256 newCustomNetworkFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
-  constructor(address _token, address _earn, address _vault, address _treasuryWallet, address _communityWallet)
-    ERC20("Yearn Farmer v2 USDT", "yfUSDTv2") {
-      token = IERC20(_token);
+  constructor() ERC20("Yearn Farmer v2 USDT", "yfUSDTv2") {
       _setupDecimals(6);
-
-      earn = IYearn(address(_earn));
-      vault = IYvault(address(_vault));
       _approvePooling();
-
-      treasuryWallet = _treasuryWallet;
-      communityWallet = _communityWallet;
   }
 
   /**
@@ -108,73 +100,74 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Set deposit fee tier
-   * @notice Details for deposit fee tier can view at deposit() function below
-   * @param _depositFeeTier2  Array [tier2 minimun, tier2 maximun], view additional info below
+   * @notice Set network fee tier
+   * @notice Details for network fee tier can view at deposit() function below
+   * @param _networkFeeTier2  Array [tier2 minimun, tier2 maximun], view additional info below
    * Requirements:
    * - Only owner of this contract can call this function
    * - First element in array must greater than 0
    * - Second element must greater than first element
    */
-  function setDepositFeeTier2(uint256[] calldata _depositFeeTier2) external onlyOwner {
-    require(_depositFeeTier2[0] != 0, "Minimun amount cannot be 0");
-    require(_depositFeeTier2[1] > _depositFeeTier2[0], "Maximun amount must greater than minimun amount");
+  function setNetworkFeeTier2(uint256[] calldata _networkFeeTier2) external onlyOwner {
+    require(_networkFeeTier2[0] != 0, "Minimun amount cannot be 0");
+    require(_networkFeeTier2[1] > _networkFeeTier2[0], "Maximun amount must greater than minimun amount");
     /**
-     * Deposit fees have three tier, but it is sufficient to have minimun and maximun amount of tier 2
+     * Network fees have three tier, but it is sufficient to have minimun and maximun amount of tier 2
      * Tier 1: deposit amount < minimun amount of tier 2
      * Tier 2: minimun amount of tier 2 <= deposit amount <= maximun amount of tier 2
      * Tier 3: amount > maximun amount of tier 2
      */
-    emit SetDepositFeeTier2(depositFeeTier2, _depositFeeTier2);
-    depositFeeTier2 = _depositFeeTier2;
+    emit SetNetworkFeeTier2(networkFeeTier2, _networkFeeTier2);
+    networkFeeTier2 = _networkFeeTier2;
   }
 
   /**
-   * @notice Set deposit fee in percentage
-   * @param _depositFeePercentage An array of integer, view additional info below
+   * @notice Set network fee in percentage
+   * @param _networkFeePercentage An array of integer, view additional info below
    * Requirements:
    * - Only owner of this contract can call this function
    * - Each of the element in the array must less than 4000 (40%) 
    */
-  function setDepositFeePercentage(uint256[] calldata _depositFeePercentage) external onlyOwner {
+  function setNetworkFeePercentage(uint256[] calldata _networkFeePercentage) external onlyOwner {
     /** 
-     * _depositFeePercentage content a array of 3 element, representing deposit fee of tier 1, tier 2 and tier 3
-     * For example depositFeePercentage is [100, 75, 50]
-     * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.75% and Tier 3 = 0.5%
+     * _networkFeePercentage content a array of 3 element, representing network fee of tier 1, tier 2 and tier 3
+     * For example networkFeePercentage is [100, 75, 50]
+     * which mean network fee for Tier 1 = 1%, Tier 2 = 0.75% and Tier 3 = 0.5%
      */
     require(
-      _depositFeePercentage[0] < 4000 &&
-      _depositFeePercentage[1] < 4000 &&
-      _depositFeePercentage[2] < 4000, "Deposit fee percentage cannot be more than 40%"
+      _networkFeePercentage[0] < 4000 &&
+      _networkFeePercentage[1] < 4000 &&
+      _networkFeePercentage[2] < 4000, "Network fee percentage cannot be more than 40%"
     );
-    emit SetDepositFeePercentage(depositFeePercentage, _depositFeePercentage);
-    depositFeePercentage = _depositFeePercentage;
+    emit SetNetworkFeePercentage(networkFeePercentage, _networkFeePercentage);
+    networkFeePercentage = _networkFeePercentage;
   }
 
   /**
-   * @notice Set deposit fee tier
-   * @param _customDepositFeeTier Integar
+   * @notice Set network fee tier
+   * @param _customNetworkFeeTier Integar
+   * @dev Custom network fee tier is checked before network fee tier 3. Please check networkFeeTier[1] before set.
    * Requirements:
    * - Only owner of this contract can call this function
-   * - Custom deposit fee tier must greater than deposit fee tier 2
+   * - Custom network fee tier must greater than network fee tier 2
    */
-  function setCustomDepositFeeTier(uint256 _customDepositFeeTier) external onlyOwner {
-    require(_customDepositFeeTier > depositFeeTier2[1], "Custom deposit fee tier must greater than tier 2");
-    emit SetCustomDepositFeeTier(customDepositFeeTier, _customDepositFeeTier);
-    customDepositFeeTier = _customDepositFeeTier;
+  function setCustomNetworkFeeTier(uint256 _customNetworkFeeTier) external onlyOwner {
+    require(_customNetworkFeeTier > networkFeeTier2[1], "Custom network fee tier must greater than tier 2");
+    emit SetCustomNetworkFeeTier(customNetworkFeeTier, _customNetworkFeeTier);
+    customNetworkFeeTier = _customNetworkFeeTier;
   }
 
   /**
-   * @notice Set custom deposit fee
+   * @notice Set custom network fee
    * @param _percentage Integar (100 = 1%)
    * Requirements:
    * - Only owner of this contract can call this function
-   * - Amount set must less than deposit fee for tier 2
+   * - Amount set must less than network fee for tier 2
    */
-  function setCustomDepositFeePercentage(uint256 _percentage) public onlyOwner {
-    require(_percentage < depositFeePercentage[2], "Custom deposit fee percentage cannot be more than tier 2");
-    emit SetCustomDepositFeePercentage(customDepositFeePercentage, _percentage);
-    customDepositFeePercentage = _percentage;
+  function setCustomNetworkFeePercentage(uint256 _percentage) public onlyOwner {
+    require(_percentage < networkFeePercentage[2], "Custom network fee percentage cannot be more than tier 2");
+    emit SetCustomNetworkFeePercentage(customNetworkFeePercentage, _percentage);
+    customNetworkFeePercentage = _percentage;
   }
 
   /**
@@ -206,7 +199,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Get Yearn Earn current total deposit amount of account (after deposit fee)
+   * @notice Get Yearn Earn current total deposit amount of account (after network fee)
    * @param _address Address of account to check
    * @return Current total deposit amount of account in Yearn Earn. 0 if contract is in vesting state.
    */
@@ -219,7 +212,7 @@ contract yfUSDTv2 is ERC20, Ownable {
   }
 
   /**
-   * @notice Get Yearn Vault current total deposit amount of account (after deposit fee)
+   * @notice Get Yearn Vault current total deposit amount of account (after network fee)
    * @param _address Address of account to check
    * @return Current total deposit amount of account in Yearn Vault. 0 if contract is in vesting state.
    */
@@ -250,54 +243,54 @@ contract yfUSDTv2 is ERC20, Ownable {
     uint256 _depositAmount = _earnAmount.add(_vaultAmount);
     token.safeTransferFrom(tx.origin, address(this), _depositAmount);
 
-    uint256 _earnDepositFee = 0;
-    uint256 _vaultDepositFee = 0;
-    uint256 _depositFeePercentage = 0;
+    uint256 _earnNetworkFee = 0;
+    uint256 _vaultNetworkFee = 0;
+    uint256 _networkFeePercentage = 0;
     /**
-     * v2: Deposit fees
-     * depositFeeTier2 is used to set each tier minimun and maximun
-     * For example depositFeeTier2 is [50000, 100000],
+     * Network fees
+     * networkFeeTier2 is used to set each tier minimun and maximun
+     * For example networkFeeTier2 is [50000, 100000],
      * Tier 1 = _depositAmount < 50001
      * Tier 2 = 50001 <= _depositAmount <= 100000
      * Tier 3 = _depositAmount > 100000
      *
-     * depositFeePercentage is used to set each tier deposit fee percentage
-     * For example depositFeePercentage is [100, 75, 50]
-     * which mean deposit fee for Tier 1 = 1%, Tier 2 = 0.75%, Tier 3 = 0.5%
+     * networkFeePercentage is used to set each tier network fee percentage
+     * For example networkFeePercentage is [100, 75, 50]
+     * which mean network fee for Tier 1 = 1%, Tier 2 = 0.75%, Tier 3 = 0.5%
      *
-     * customDepositFeeTier is set before deposit fee tier 3
-     * customDepositFeepercentage will be used if _depositAmount over customDepositFeeTier before deposit fee tier 3
+     * customNetworkFeeTier is set before network fee tier 3
+     * customNetworkFeepercentage will be used if _depositAmount over customNetworkFeeTier before network fee tier 3
      */
-    if (_depositAmount < depositFeeTier2[0]) {
+    if (_depositAmount < networkFeeTier2[0]) {
       // Tier 1
-      _depositFeePercentage = depositFeePercentage[0];
-    } else if (_depositAmount >= depositFeeTier2[0] && _depositAmount <= depositFeeTier2[1]) {
+      _networkFeePercentage = networkFeePercentage[0];
+    } else if (_depositAmount >= networkFeeTier2[0] && _depositAmount <= networkFeeTier2[1]) {
       // Tier 2
-      _depositFeePercentage = depositFeePercentage[1];
-    } else if (_depositAmount >= customDepositFeeTier) {
+      _networkFeePercentage = networkFeePercentage[1];
+    } else if (_depositAmount >= customNetworkFeeTier) {
       // Custom tier
-      _depositFeePercentage = customDepositFeePercentage;
+      _networkFeePercentage = customNetworkFeePercentage;
     } else {
       // Tier 3
-      _depositFeePercentage = depositFeePercentage[2];
+      _networkFeePercentage = networkFeePercentage[2];
     }
 
     // Deposit to Yearn Earn after fee
     if (_earnAmount > 0) {
-      _earnDepositFee = _earnAmount.mul(_depositFeePercentage).div(DENOMINATOR);
-      _earnAmount = _earnAmount.sub(_earnDepositFee);
+      _earnNetworkFee = _earnAmount.mul(_networkFeePercentage).div(DENOMINATOR);
+      _earnAmount = _earnAmount.sub(_earnNetworkFee);
       earn.deposit(_earnAmount);
       earnDepositBalance[tx.origin] = earnDepositBalance[tx.origin].add(_earnAmount);
     }
 
     // Deposit to Yearn Vault after fee
     if (_vaultAmount > 0) {
-      _vaultDepositFee = _vaultAmount.mul(_depositFeePercentage).div(DENOMINATOR);
-      _vaultAmount = _vaultAmount.sub(_vaultDepositFee);
+      _vaultNetworkFee = _vaultAmount.mul(_networkFeePercentage).div(DENOMINATOR);
+      _vaultAmount = _vaultAmount.sub(_vaultNetworkFee);
       vault.deposit(_vaultAmount);
       vaultDepositBalance[tx.origin] = vaultDepositBalance[tx.origin].add(_vaultAmount);
     }
-    token.safeTransfer(treasuryWallet, _earnDepositFee.add(_vaultDepositFee));
+    token.safeTransfer(treasuryWallet, _earnNetworkFee.add(_vaultNetworkFee));
 
     uint256 _shares = 0;
     if (totalSupply() == 0) {
