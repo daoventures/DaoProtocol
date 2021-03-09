@@ -43,14 +43,14 @@ Refund from Yearn-Farmer contract. This function only can access through daoVaul
 - *Param*: -
 
 #### function `getEarnDepositBalance(address)`
-Get Yearn Earn current total deposit amount of account (after deposit fee).
+Get Yearn Earn current total deposit amount of account (after network fee).
 - *Param*: Address of account to check
-- *Return*: Current total deposit amount of account in Yearn Earn (after deposit fee).
+- *Return*: Current total deposit amount of account in Yearn Earn (after network fee).
 
 #### function `getVaultDepositBalance(address)`
-Get Yearn Vault current total deposit amount of account (after deposit fee).
+Get Yearn Vault current total deposit amount of account (after network fee).
 - *Param*: Address of account to check
-- *Return*: Current total deposit amount of account in Yearn Vault (after deposit fee).
+- *Return*: Current total deposit amount of account in Yearn Vault (after network fee).
 
 #### function `getSharesValue(address)`
 Get token amount based on daoToken hold by account after contract in vesting state.
@@ -68,31 +68,31 @@ Set new community wallet address in contract.
 - *Param*: Address of new community wallet
 - *Event*: eventName: SetCommunityWallet, args: [oldCommunityWallet(indexed), newCommunityWallet(indexed)]
 
-#### function `setDepositFeeTier2(list)`
-Set new deposit fee tier 2.
-Deposit fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <= deposit amount <= maximum. Tier 3: maximun < deposit amount.
+#### function `setNetworkFeeTier2(list)`
+Set new network fee tier 2. Network fee is collect in deposit.
+Network fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <= deposit amount <= maximum. Tier 3: maximun < deposit amount.
 - *Param*: number list [minimum, maximum]
-- *Event*: eventName: SetDepositFeeTier2, args: [[oldDepositFeeTier2], [newDepositFeeTier2]]
+- *Event*: eventName: SetNetworkFeeTier2, args: [[oldNetworkFeeTier2], [newNetworkFeeTier2]]
 
-#### function `setDepositFeePercentage(list)`
-Set new deposit fee percentage. Deposit fee has three tier.
+#### function `setNetworkFeePercentage(list)`
+Set new network fee percentage. Network fee has three tier. Network fee is collect in deposit.
 - *Param*: number list [tier1perc, tier2perc, tier3perc] (100 = 1%, maximum 3999)
-- *Event*: eventName: SetDepositFeePercentage, args: [[oldDepositFeePercentage], [newDepositFeePercentage]]
+- *Event*: eventName: SetNetworkFeePercentage, args: [[oldNetworkFeePercentage], [newNetworkFeePercentage]]
 
-#### function `setCustomDepositFeeTier(integar)`
-Set new custom deposit fee tier.
-Custom deposit fee tier is checked before deposit fee tier 3 when calculate deposit fee.
-Please make sure custom deposit fee tier amount is higher than deposit fee tier 3.
+#### function `setCustomNetworkFeeTier(integar)`
+Set new custom network fee tier. Network fee is collect in deposit.
+Custom network fee tier is checked before network fee tier 3 when calculate network fee.
+Please make sure custom network fee tier amount is higher than network fee tier 3.
 - *Param*: number list [minimum, maximum]
-- *Event*: eventName: SetCustomDepositFeeTier, args: [oldCustomDepositFeeTier, newCustomDepositFeeTier]
+- *Event*: eventName: SetCustomNetworkFeeTier, args: [oldCustomNetworkFeeTier, newCustomNetworkFeeTier]
 
-#### function `setCustomDepositFeePercentage(integar)`
-Set new custom deposit fee percentage.
+#### function `setCustomNetworkFeePercentage(integar)`
+Set new custom network fee percentage. Network fee is collect in deposit.
 - *Param*: integar (100 = 1%)
-- *Event*: eventName: SetCustomDepositFeePercentage, args: [oldCustomDepositFeePercentage, newCustomDepositFeePercentage]
+- *Event*: eventName: SetCustomNetworkFeePercentage, args: [oldCustomNetworkFeePercentage, newCustomNetworkFeePercentage]
 
 #### function `setProfileSharingFeePercentage(integar)`
-Set new profile sharing fee percentage.
+Set new profile sharing fee percentage. Profile sharing fee is collect in withdraw(if profit).
 - *Param*: integer (1 = 1%, maximun 39)
 - *Event*: eventName: SetProfileSharingFeePercentage, args: [oldProfileSharingFeePercentage, newProfileSharingFeePercentage]
 
@@ -136,26 +136,26 @@ Get current community wallet.
 - *Param*: -
 - *Return*: Current community wallet address
 
-#### function `depositFeeTier2()`
-Get current deposit fee tier 2 ([minimun, maximun]).
-Deposit fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <= deposit amount <= maximum. Tier 3: maximun < deposit amount.
+#### function `networkFeeTier2()`
+Get current network fee tier 2 ([minimun, maximun]).
+Network fee has three tier. Tier 1: deposit amount < minimun. Tier 2: minimun <= deposit amount <= maximum. Tier 3: maximun < deposit amount.
 - *Param*: -
-- *Return*: Current deposit fee tier 2
+- *Return*: Current network fee tier 2
 
-#### function `customDepositFeeTier()`
-Get current custom deposit fee tier.
+#### function `customNetworkFeeTier()`
+Get current custom network fee tier.
 - *Param*: -
-- *Return*: Current custom deposit fee tier
+- *Return*: Current custom network fee tier
 
-#### function `depositFeePercentage()`
-Get current deposit fee percentage ([tier1perc, tier2perc, tier3perc]). 100 = 1%.
+#### function `networkFeePercentage()`
+Get current network fee percentage ([tier1perc, tier2perc, tier3perc]). 100 = 1%.
 - *Param*: -
-- *Return*: Current deposit fee percentage in amount
+- *Return*: Current network fee percentage in amount
 
-#### function `customDepositFeePercentage()`
-Get current custom deposit fee percentage. 100 = 1%.
+#### function `customNetworkFeePercentage()`
+Get current custom network fee percentage. 100 = 1%.
 - *Param*: -
-- *Return*: Current custom deposit fee percentage in amount
+- *Return*: Current custom network fee percentage in amount
 
 #### function `profileSharingFeePercentage()`
 Get current profile sharing fee percentage. 100 = 1%.
@@ -205,7 +205,7 @@ Unlock `migrateFunds()`. Execute `setPendingStrategy()` will be reverted after e
 #### function `migrateFunds()`
 Migrate funds from old strategy to new strategy.
 - *Param*: -
-- *Requirements*: 5 days after execute `unlockMigrateFunds()` and valid for 1 day.  
+- *Requirements*: 2 days after execute `unlockMigrateFunds()` and valid for 1 day.  
 - *Event*: eventName: MigrateFunds, args: [fromStrategy(indexed), toStrategy(indexed), amount]
 
 ### General functions
