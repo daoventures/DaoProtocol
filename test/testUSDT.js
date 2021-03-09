@@ -9,10 +9,10 @@ const IYvault_ABI = require("../artifacts/interfaces/IYvault.sol/IYvault.json").
 const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 const yEarnAddress = "0xE6354ed5bC4b393a5Aad09f21c46E101e692d447"
 const yVaultAddress = "0x2f08119C6f07c006695E079AAFc638b8789FAf18"
-const unlockedAddress = "0x1062a747393198f70F71ec65A582423Dba7E5Ab3"
+const unlockedAddress = "0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8"
 
 const treasuryWalletAddress = "0x59E83877bD248cBFe392dbB5A8a29959bcb48592"
-const communityWalletAddress = "0xb1AD074E17AD59f2103A8832DADE917388D6C50D"
+const communityWalletAddress = "0xdd6c35aFF646B2fB7d8A8955Ccbe0994409348d0"
 
 describe("yfUSDTv2", () => {
     beforeEach(async () => {
@@ -35,17 +35,16 @@ describe("yfUSDTv2", () => {
         const unlockedSigner = await ethers.provider.getSigner(unlockedAddress)
         const [senderSigner, _] = await ethers.getSigners()
         const tokenContract = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
-        await tokenContract.connect(unlockedSigner).transfer(senderSigner.address, "500000000000000")
-        expect(await tokenContract.balanceOf(senderSigner.address)).to.equal("500000000000000")
+        await tokenContract.connect(unlockedSigner).transfer(senderSigner.address, tokenContract.balanceOf(unlockedAddress))
     })
 
     it("should deploy contract correctly", async () => {
         // Get sender address and deploy the contracts
         const [senderSigner, _] = await ethers.getSigners()
         const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-        const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+        const yfUSDTContract = await YfUSDTContract.deploy()
         const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-        const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+        const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
         await yfUSDTContract.setVault(daoVaultUSDT.address)
         // Check if execute set vault function again to be reverted
         await expect(yfUSDTContract.setVault(senderSigner.address)).to.be.revertedWith("Vault set")
@@ -64,17 +63,17 @@ describe("yfUSDTv2", () => {
         expect(await yfUSDTContract.treasuryWallet()).to.equal(treasuryWalletAddress)
         // Check if community wallet address match given address in Yearn Farmer contract
         expect(await yfUSDTContract.communityWallet()).to.equal(communityWalletAddress)
-        // Check if initial tier2 of deposit fee is 50001e6 <= tokenAmount <= 100000e6 in Yearn Farmer contract (More details in contract)
-        expect(await yfUSDTContract.depositFeeTier2(0)).to.equal("50000000001")
-        expect(await yfUSDTContract.depositFeeTier2(1)).to.equal("100000000000")
-        // Check if initial deposit fee percentage is 1% for tier1, 0.5% for tier2, and 0.25% for tier3 in Yearn Farmer contract (More details in contract)
-        expect(await yfUSDTContract.depositFeePercentage(0)).to.equal(100) // 1% = 100/10000, more detail in contract
-        expect(await yfUSDTContract.depositFeePercentage(1)).to.equal(75) // 1% = 50/10000, more detail in contract
-        expect(await yfUSDTContract.depositFeePercentage(2)).to.equal(50) // 1% = 25/10000, more detail in contract
-        // Check if initial custom deposit fee tier is 1000000e6
-        expect(await yfUSDTContract.customDepositFeeTier()).to.equal(ethers.utils.parseUnits("1", 12))
-        // Check if initial custom deposit fee percentage is 0.25%
-        expect(await yfUSDTContract.customDepositFeePercentage()).to.equal(25)
+        // Check if initial tier2 of network fee is 50001e6 <= tokenAmount <= 100000e6 in Yearn Farmer contract (More details in contract)
+        expect(await yfUSDTContract.networkFeeTier2(0)).to.equal("50000000001")
+        expect(await yfUSDTContract.networkFeeTier2(1)).to.equal("100000000000")
+        // Check if initial network fee percentage is 1% for tier1, 0.75% for tier2, and 0.5% for tier3 in Yearn Farmer contract (More details in contract)
+        expect(await yfUSDTContract.networkFeePercentage(0)).to.equal(100) // 1% = 100/10000, more detail in contract
+        expect(await yfUSDTContract.networkFeePercentage(1)).to.equal(75) // 1% = 50/10000, more detail in contract
+        expect(await yfUSDTContract.networkFeePercentage(2)).to.equal(50) // 1% = 25/10000, more detail in contract
+        // Check if initial custom network fee tier is 1000000e6
+        expect(await yfUSDTContract.customNetworkFeeTier()).to.equal(ethers.utils.parseUnits("1", 12))
+        // Check if initial custom network fee percentage is 0.25%
+        expect(await yfUSDTContract.customNetworkFeePercentage()).to.equal(25)
         // Check if initial profile sharing fee percentage is 10% in Yearn Farmer contract
         expect(await yfUSDTContract.profileSharingFeePercentage()).to.equal(1000)
         // Check if contract is not vesting in Yearn Farmer contract
@@ -92,8 +91,8 @@ describe("yfUSDTv2", () => {
         expect(await daoVaultUSDT.canSetPendingStrategy()).is.true
         // Check if no unlockTime set yet in daoVaultUSDT contract
         expect(await daoVaultUSDT.unlockTime()).to.equal(0)
-        // Check if timelock duration is 5 days in daoVaultUSDT contract
-        expect(await daoVaultUSDT.LOCKTIME()).to.equal(5*24*60*60) // 5 days in seconds
+        // Check if timelock duration is 2 days in daoVaultUSDT contract
+        expect(await daoVaultUSDT.LOCKTIME()).to.equal(2*24*60*60) // 2 days in seconds
     })
 
     // Check user functions
@@ -102,9 +101,9 @@ describe("yfUSDTv2", () => {
             // Get sender address and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some USDT to client
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -126,7 +125,7 @@ describe("yfUSDTv2", () => {
             // Check if user deposit successfully with correct amount
             const earnDepositAmount = await yfUSDTContract.getEarnDepositBalance(clientSigner.address)
             const vaultDepositAmount = await yfUSDTContract.getVaultDepositBalance(clientSigner.address)
-            // Deposit fee for amount < 10000 is 1% by default
+            // Network fee for amount < 10000 is 1% by default
             const earnDepositBalance = "100000000" - Math.floor(100000000 * 1 / 100)
             const vaultDepositBalance = "200000000" - Math.floor(200000000 * 1 / 100)
             expect(earnDepositAmount).to.equal(earnDepositBalance)
@@ -138,37 +137,37 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
-            // Check deduct deposit fee correctly in tier 1
+            // Check deduct network fee correctly in tier 1
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
             await token.approve(yfUSDTContract.address, ethers.utils.parseEther("1"))
             let earnDepositBalance, vaultDepositBalance
             await daoVaultUSDT.deposit(["100000000", "200000000"])
-            // Deposit fee for amount < 10000 is 1% in tier 1 by default
+            // Network fee for amount < 10000 is 1% in tier 1 by default
             earnDepositBalance = "100000000" - Math.floor(100000000 * 1 / 100)
             vaultDepositBalance = "200000000" - Math.floor(200000000 * 1 / 100)
             expect(await yfUSDTContract.getEarnDepositBalance(senderSigner.address)).to.equal(Math.floor(earnDepositBalance))
             expect(await yfUSDTContract.getVaultDepositBalance(senderSigner.address)).to.equal(Math.floor(vaultDepositBalance))
-            // Check deduct deposit fee correctly in tier 2
+            // Check deduct network fee correctly in tier 2
             await daoVaultUSDT.deposit(["60000000000", "20000000000"])
-            // Deposit fee for amount > 50000 and amount <= 100000 is 0.75% in tier 2 by default
+            // Network fee for amount > 50000 and amount <= 100000 is 0.75% in tier 2 by default
             earnDepositBalance = earnDepositBalance + Math.floor("60000000000" - Math.floor(60000000000 * 0.75 / 100))
             vaultDepositBalance = vaultDepositBalance + Math.floor("20000000000" - Math.floor(20000000000 * 0.75 / 100))
             expect(await yfUSDTContract.getEarnDepositBalance(senderSigner.address)).to.equal(earnDepositBalance)
             expect(await yfUSDTContract.getVaultDepositBalance(senderSigner.address)).to.equal(vaultDepositBalance)
-            // Check deduct deposit fee correctly in tier 3
+            // Check deduct network fee correctly in tier 3
             await daoVaultUSDT.deposit(["100000000000", "200000000000"])
-            // Deposit fee for amount > 100000 is 0.5% in tier 3 by default
+            // Network fee for amount > 100000 is 0.5% in tier 3 by default
             earnDepositBalance = earnDepositBalance + Math.floor(100000000000 - Math.floor(100000000000 * 0.5 / 100))
             vaultDepositBalance = vaultDepositBalance + Math.floor(200000000000 - Math.floor(200000000000 * 0.5 / 100))
             expect(await yfUSDTContract.getEarnDepositBalance(senderSigner.address)).to.equal(earnDepositBalance)
             expect(await yfUSDTContract.getVaultDepositBalance(senderSigner.address)).to.equal(vaultDepositBalance)
-            // Check deduct deposit fee correctly in custom tier
+            // Check deduct network fee correctly in custom tier
             await daoVaultUSDT.deposit(["1000000000000", "2000000000000"])
-            // Deposit fee for amount > 1000000 is 0.25% in custom tier by default
+            // Network fee for amount > 1000000 is 0.25% in custom tier by default
             earnDepositBalance = earnDepositBalance + Math.floor(1000000000000 - Math.floor(1000000000000 * 0.25 / 100))
             vaultDepositBalance = vaultDepositBalance + Math.floor(2000000000000 - Math.floor(2000000000000 * 0.25 / 100))
             expect(await yfUSDTContract.getEarnDepositBalance(senderSigner.address)).to.equal(earnDepositBalance)
@@ -179,9 +178,9 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some USDT to client
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -232,9 +231,9 @@ describe("yfUSDTv2", () => {
         //     // Get signer and address of sender and deploy the contracts
         //     const [senderSigner, _] = await ethers.getSigners()
         //     const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-        //     const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+        //     const yfUSDTContract = await YfUSDTContract.deploy()
         //     const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-        //     const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+        //     const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
         //     await yfUSDTContract.setVault(daoVaultUSDT.address)
         //     // Get treasury wallet USDT balance before deposit
         //     const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -268,9 +267,9 @@ describe("yfUSDTv2", () => {
         //         .add(vaultExampleWithdrawAmount.sub(vaultFee))
         //     )
         //     // Check if all fees transfer to treasury and community wallet correctly
-        //     const depositFees = Math.floor((100000000 + 200000000) * 1 / 100) // 1% deposit fee for tier 1, for treasury wallet only
+        //     const networkFees = Math.floor((100000000 + 200000000) * 1 / 100) // 1% network fee for tier 1, for treasury wallet only
         //     const profileSharingFees = (earnFee.add(vaultFee)).mul(50).div(100) // 50% split between treasury and community wallet
-        //     expect(await token.balanceOf(treasuryWalletAddress)).to.equal(treasuryWalletTokenBalBeforeDeposit.add(profileSharingFees.add(depositFees)))
+        //     expect(await token.balanceOf(treasuryWalletAddress)).to.equal(treasuryWalletTokenBalBeforeDeposit.add(profileSharingFees.add(networkFees)))
         //     expect(await token.balanceOf(communityWalletAddress)).to.equal(communityWalletTokenBalBeforeDeposit.add(profileSharingFees))
         // })
 
@@ -278,9 +277,9 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and client and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Deposit 100 to Yearn Earn contract and 200 to Yearn Vault contract
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -288,10 +287,10 @@ describe("yfUSDTv2", () => {
             await daoVaultUSDT.deposit(["100000000", "200000000"])
             // Deposit another 300 to Yearn Earn contract and 400 to Yearn Vault contract
             await daoVaultUSDT.deposit(["300000000", "400000000"])
-            // Check if balance deposit of Yearn Earn contract and Yearn Vault contract after deposit fee return correctly
-            const totalEarnDepositAfterFee = (100000000 + 300000000) - Math.floor((100000000 + 300000000) * 0.01) // 0.01: 1% deposit fee for tier 1
+            // Check if balance deposit of Yearn Earn contract and Yearn Vault contract after network fee return correctly
+            const totalEarnDepositAfterFee = (100000000 + 300000000) - Math.floor((100000000 + 300000000) * 0.01) // 0.01: 1% network fee for tier 1
             expect(await yfUSDTContract.getEarnDepositBalance(senderSigner.address)).to.equal(totalEarnDepositAfterFee)
-            const totalVaultDepositAfterFee = (200000000 + 400000000) - Math.floor((200000000 + 400000000) * 0.01) // 0.01: 1% deposit fee for tier 1
+            const totalVaultDepositAfterFee = (200000000 + 400000000) - Math.floor((200000000 + 400000000) * 0.01) // 0.01: 1% network fee for tier 1
             expect(await yfUSDTContract.getVaultDepositBalance(senderSigner.address)).to.equal(totalVaultDepositAfterFee)
             // Transfer some USDT to client account
             await token.transfer(clientSigner.address, "1000000000")
@@ -299,18 +298,18 @@ describe("yfUSDTv2", () => {
             // Deposit 150 to Yearn Earn contract and 250 to Yearn Vault contract from client
             await token.connect(clientSigner).approve(yfUSDTContract.address, "1000000000")
             await daoVaultUSDT.connect(clientSigner).deposit(["150000000", "250000000"])
-            // Check if balance deposit of Yearn Earn contract and Yearn Vault contract after deposit fee from another account return correctly
-            expect(await yfUSDTContract.getEarnDepositBalance(clientSigner.address)).to.equal(150000000 - Math.floor(150000000 * 0.01)) // 0.01: 1% deposit fee for tier 1
-            expect(await yfUSDTContract.getVaultDepositBalance(clientSigner.address)).to.equal(250000000 - Math.floor(250000000 * 0.01)) // 0.01: 1% deposit fee for tier 1
+            // Check if balance deposit of Yearn Earn contract and Yearn Vault contract after network fee from another account return correctly
+            expect(await yfUSDTContract.getEarnDepositBalance(clientSigner.address)).to.equal(150000000 - Math.floor(150000000 * 0.01)) // 0.01: 1% network fee for tier 1
+            expect(await yfUSDTContract.getVaultDepositBalance(clientSigner.address)).to.equal(250000000 - Math.floor(250000000 * 0.01)) // 0.01: 1% network fee for tier 1
         })
 
         it("should able to deal with mix and match situation (deposit and withdraw several times by several parties)", async () => {
              // Get signer and address of sender and client and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some token to client account
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -328,7 +327,7 @@ describe("yfUSDTv2", () => {
             await daoVaultUSDT.connect(clientSigner).deposit(["249000000", 0])
             await daoVaultUSDT.deposit(["132000000", "186000000"])
             await daoVaultUSDT.connect(clientSigner).deposit(["234000000", "269000000"])
-            // Get Yearn Farmer earn and vault deposit fees of accounts
+            // Get Yearn Farmer earn and vault network fees of accounts
             const senderEarnDepFee = Math.floor(123000000*0.01)+Math.floor(132000000*0.01)
             const senderVaultDepFee = Math.floor(166000000*0.01)+Math.floor(186000000*0.01)
             const clientEarnDepFee = Math.floor(249000000*0.01)+Math.floor(234000000*0.01)
@@ -347,7 +346,7 @@ describe("yfUSDTv2", () => {
             // Check if token balance of accounts deduct correctly after deposit
             expect(senderTknBalAftDep).to.equal(senderTknBalBefDep.sub(123000000+132000000+166000000+186000000))
             expect(clientTknBalAftDep).to.equal(clientTknBalBefDep.sub(212000000+249000000+234000000+269000000))
-            // Check if deposit fees send to treasury wallet correctly
+            // Check if network fees send to treasury wallet correctly
             expect(await token.balanceOf(treasuryWalletAddress)).to.equal(senderEarnDepFee+senderVaultDepFee+clientEarnDepFee+clientVaultDepFee)
             // Get Yearn Farmer pool amount
             const yfPool = await yfUSDTContract.pool()
@@ -436,9 +435,9 @@ describe("yfUSDTv2", () => {
             // Get signer and address of sender and client and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Approve Yearn Farmer to transfer token from sender
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -483,9 +482,9 @@ describe("yfUSDTv2", () => {
             // Get address of owner and deploy the contracts
             const [senderSigner, clientSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some token to client
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -524,9 +523,9 @@ describe("yfUSDTv2", () => {
             // Get address of owner and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Transfer some USDT to Yearn Farmer contract as profit from Yearn contract
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -560,9 +559,9 @@ describe("yfUSDTv2", () => {
             // Get address of owner and deploy the contracts
             const [senderSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", senderSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", senderSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if Yearn Earn and Vault contract can deposit a huge amount of USDT from yfUSDT contract
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, senderSigner)
@@ -578,9 +577,9 @@ describe("yfUSDTv2", () => {
             // Get address of owner and new owner and deploy the contracts
             const [ownerSigner, newOwnerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", ownerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", ownerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if contract ownership is owner before transfer
             expect(await yfUSDTContract.owner()).to.equal(ownerSigner.address)
@@ -591,10 +590,10 @@ describe("yfUSDTv2", () => {
             await expect(daoVaultUSDT.connect(newOwnerSigner).migrateFunds()).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setVault(newOwnerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setTreasuryWallet(newOwnerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setDepositFeePercentage([30, 30, 30])).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomDepositFeeTier(ethers.utils.parseUnits("1", 13))).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomDepositFeePercentage(20)).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setNetworkFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setNetworkFeePercentage([30, 30, 30])).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomNetworkFeeTier(ethers.utils.parseUnits("1", 13))).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomNetworkFeePercentage(20)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).vesting()).to.be.revertedWith("Ownable: caller is not the owner")
             // Transfer contract ownership from owner to new owner
             await daoVaultUSDT.transferOwnership(newOwnerSigner.address)
@@ -608,10 +607,10 @@ describe("yfUSDTv2", () => {
             await expect(daoVaultUSDT.connect(newOwnerSigner).migrateFunds()).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setVault(ownerSigner.address)).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).setTreasuryWallet(ownerSigner.address)).not.to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setDepositFeeTier2(["100000000", "200000000"])).not.to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setDepositFeePercentage([30, 30, 30])).not.to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomDepositFeeTier(ethers.utils.parseUnits("1", 13))).not.to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomDepositFeePercentage(20)).not.to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setNetworkFeeTier2(["100000000", "200000000"])).not.to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setNetworkFeePercentage([30, 30, 30])).not.to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomNetworkFeeTier(ethers.utils.parseUnits("1", 13))).not.to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(newOwnerSigner).setCustomNetworkFeePercentage(20)).not.to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(newOwnerSigner).vesting()).not.to.be.revertedWith("Ownable: caller is not the owner")
             // Check if original owner neither can execute admin function nor transfer back ownership
             await expect(daoVaultUSDT.connect(ownerSigner).transferOwnership(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
@@ -621,10 +620,10 @@ describe("yfUSDTv2", () => {
             await expect(yfUSDTContract.connect(ownerSigner).transferOwnership(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).setVault(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).setTreasuryWallet(ownerSigner.address)).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(ownerSigner).setDepositFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(ownerSigner).setDepositFeePercentage([30, 30, 30])).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(ownerSigner).setCustomDepositFeeTier(ethers.utils.parseUnits("1", 13))).to.be.revertedWith("Ownable: caller is not the owner")
-            await expect(yfUSDTContract.connect(ownerSigner).setCustomDepositFeePercentage(20)).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(ownerSigner).setNetworkFeeTier2(["100000000", "200000000"])).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(ownerSigner).setNetworkFeePercentage([30, 30, 30])).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(ownerSigner).setCustomNetworkFeeTier(ethers.utils.parseUnits("1", 13))).to.be.revertedWith("Ownable: caller is not the owner")
+            await expect(yfUSDTContract.connect(ownerSigner).setCustomNetworkFeePercentage(20)).to.be.revertedWith("Ownable: caller is not the owner")
             await expect(yfUSDTContract.connect(ownerSigner).vesting()).to.be.revertedWith("Ownable: caller is not the owner")
         })
 
@@ -632,9 +631,9 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Set pending strategy
             const SampleContract = await ethers.getContractFactory("SampleContract", deployerSigner)
@@ -652,10 +651,14 @@ describe("yfUSDTv2", () => {
             const tokenBalance = await token.balanceOf(yfUSDTContract.address) 
             // Execute unlock migrate funds function
             await daoVaultUSDT.unlockMigrateFunds()
-            // Check if execute migrate funds function before 5 days be reverted
-            network.provider.send("evm_increaseTime", [86400*4]) // advance 4 days
+            // Check if execute migrate funds function before 2 days be reverted
+            network.provider.send("evm_increaseTime", [86400]) // advance 1 day
             await expect(daoVaultUSDT.migrateFunds()).to.be.revertedWith("Function locked")
-            network.provider.send("evm_increaseTime", [86400]) // advance another 1 day
+            network.provider.send("evm_increaseTime", [86400*2+60]) // advance another 2 days
+            await expect(daoVaultUSDT.migrateFunds()).to.be.revertedWith("Function locked")
+            // Execute unlock migrate funds function again
+            await daoVaultUSDT.unlockMigrateFunds()
+            network.provider.send("evm_increaseTime", [86400*2]) // advance for 2 days
             // Check if migrate funds function meet the requirements
             // await expect(daoVaultUSDT.migrateFunds()).to.be.revertedWith("No balance to migrate") // need to comment out deposit() function to test this
             // await expect(daoVaultUSDT.migrateFunds()).to.be.revertedWith("No pendingStrategy") // need to comment out set/check pending strategy function to test this
@@ -672,8 +675,7 @@ describe("yfUSDTv2", () => {
             // Check if new strategy set and pending strategy reset to 0
             expect(await daoVaultUSDT.strategy()).to.equal(sampleContract.address)
             expect(await daoVaultUSDT.pendingStrategy()).to.equal(ethers.constants.AddressZero)
-            // Check if execute migrate funds function after 6 days be reverted
-            network.provider.send("evm_increaseTime", [86400]) // advance another 1 day
+            // Check if execute migrate funds function again be reverted
             await expect(daoVaultUSDT.migrateFunds()).to.be.revertedWith("Function locked")
         })
 
@@ -681,9 +683,9 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and new treasury wallet and deploy the contracts
             const [deployerSigner, newTreasuryWalletSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Set new treasury wallet
             // Check if event for setTreasuryWallet function is logged
@@ -696,7 +698,7 @@ describe("yfUSDTv2", () => {
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, deployerSigner)
             await token.approve(yfUSDTContract.address, "1000000000")
             await daoVaultUSDT.deposit(["100000000", "200000000"])
-            // - 100 + 200 < 300 within deposit fee tier 1 hence fee = 1%
+            // - 100 + 200 < 300 within network fee tier 1 hence fee = 1%
             expect(await token.balanceOf(newTreasuryWalletSigner.address)).to.equal("3000000")
         })
 
@@ -704,9 +706,9 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and new community wallet and deploy the contracts
             const [deployerSigner, newCommunityWalletSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Set new community wallet
             // Check if event for setCommunityWallet function is logged
@@ -717,102 +719,102 @@ describe("yfUSDTv2", () => {
             expect(await yfUSDTContract.communityWallet()).to.equal(newCommunityWalletSigner.address)
         })
 
-        it("should able to set new deposit fee tier correctly in Yearn Farmer contract", async () => {
+        it("should able to set new network fee tier correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements
-            await expect(yfUSDTContract.setDepositFeeTier2([0, "10000000000"]))
+            await expect(yfUSDTContract.setNetworkFeeTier2([0, "10000000000"]))
                 .to.be.revertedWith("Minimun amount cannot be 0")
-            await expect(yfUSDTContract.setDepositFeeTier2(["10000000000", "10000000000"]))
+            await expect(yfUSDTContract.setNetworkFeeTier2(["10000000000", "10000000000"]))
                 .to.be.revertedWith("Maximun amount must greater than minimun amount")
-            // Set deposit fee tier 2 with minimun 60001 and maximun 600000 (default 50001, 500000)
+            // Set network fee tier 2 with minimun 60001 and maximun 600000 (default 50001, 500000)
             // and Check if function is log
-            await expect(yfUSDTContract.setDepositFeeTier2(["60000000001", "600000000000"]))
-                .to.emit(yfUSDTContract, "SetDepositFeeTier2")
-                .withArgs(["50000000001", "100000000000"], ["60000000001", "600000000000"]) // [oldDepositFeeTier2, newDepositFeeTier2]
-            // Check if deposit fee tier 2 amount is set correctly
-            expect(await yfUSDTContract.depositFeeTier2(0)).to.equal("60000000001")
-            expect(await yfUSDTContract.depositFeeTier2(1)).to.equal("600000000000")
+            await expect(yfUSDTContract.setNetworkFeeTier2(["60000000001", "600000000000"]))
+                .to.emit(yfUSDTContract, "SetNetworkFeeTier2")
+                .withArgs(["50000000001", "100000000000"], ["60000000001", "600000000000"]) // [oldNetworkFeeTier2, newNetworkFeeTier2]
+            // Check if network fee tier 2 amount is set correctly
+            expect(await yfUSDTContract.networkFeeTier2(0)).to.equal("60000000001")
+            expect(await yfUSDTContract.networkFeeTier2(1)).to.equal("600000000000")
         })
 
-        it("should able to set new custom deposit fee tier correctly in Yearn Farmer contract", async () => {
+        it("should able to set new custom network fee tier correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements
-            await expect(yfUSDTContract.setCustomDepositFeeTier(ethers.utils.parseUnits("1", 10)))
-                .to.be.revertedWith("Custom deposit fee tier must greater than tier 2")
-            // Set custom deposit fee tier to 2000000 (default 1000000)
+            await expect(yfUSDTContract.setCustomNetworkFeeTier(ethers.utils.parseUnits("1", 10)))
+                .to.be.revertedWith("Custom network fee tier must greater than tier 2")
+            // Set custom network fee tier to 2000000 (default 1000000)
             // and Check if function is log
-            await expect(yfUSDTContract.setCustomDepositFeeTier(ethers.utils.parseUnits("2", 12)))
-                .to.emit(yfUSDTContract, "SetCustomDepositFeeTier")
-                .withArgs("1000000000000", "2000000000000") // [oldCustomDepositFeeTier, newCustomDepositFeeTier]
-            // Check if custom deposit fee tier amount is set correctly
-            expect(await yfUSDTContract.customDepositFeeTier()).to.equal(ethers.utils.parseUnits("2", 12))
+            await expect(yfUSDTContract.setCustomNetworkFeeTier(ethers.utils.parseUnits("2", 12)))
+                .to.emit(yfUSDTContract, "SetCustomNetworkFeeTier")
+                .withArgs("1000000000000", "2000000000000") // [oldCustomNetworkFeeTier, newCustomNetworkFeeTier]
+            // Check if custom network fee tier amount is set correctly
+            expect(await yfUSDTContract.customNetworkFeeTier()).to.equal(ethers.utils.parseUnits("2", 12))
         })
 
-        it("should able to set new deposit fee percentage correctly in Yearn Farmer contract", async () => {
+        it("should able to set new network fee percentage correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements (100 = 1%)
-            await expect(yfUSDTContract.setDepositFeePercentage([4000, 0, 0]))
-                .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
-            await expect(yfUSDTContract.setDepositFeePercentage([0, 4000, 0]))
-                .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
-            await expect(yfUSDTContract.setDepositFeePercentage([0, 0, 4000]))
-                .to.be.revertedWith("Deposit fee percentage cannot be more than 40%")
-            // Set deposit fee percentage to tier1 2%, tier2 1%, tier3 0.5% (default tier1 1%, tier2 0.5%, tier3 0.25%)
+            await expect(yfUSDTContract.setNetworkFeePercentage([4000, 0, 0]))
+                .to.be.revertedWith("Network fee percentage cannot be more than 40%")
+            await expect(yfUSDTContract.setNetworkFeePercentage([0, 4000, 0]))
+                .to.be.revertedWith("Network fee percentage cannot be more than 40%")
+            await expect(yfUSDTContract.setNetworkFeePercentage([0, 0, 4000]))
+                .to.be.revertedWith("Network fee percentage cannot be more than 40%")
+            // Set network fee percentage to tier1 2%, tier2 1%, tier3 0.5% (default tier1 1%, tier2 0.5%, tier3 0.25%)
             // And check if function is log
-            await expect(yfUSDTContract.setDepositFeePercentage([200, 100, 50]))
-                .to.emit(yfUSDTContract, "SetDepositFeePercentage")
-                .withArgs([100, 75, 50], [200, 100, 50]) // [oldDepositFeePercentage, newDepositFeePercentage]
-            // Check if deposit fee percentage is set correctly
-            expect(await yfUSDTContract.depositFeePercentage(0)).to.equal(200)
-            expect(await yfUSDTContract.depositFeePercentage(1)).to.equal(100)
-            expect(await yfUSDTContract.depositFeePercentage(2)).to.equal(50)
+            await expect(yfUSDTContract.setNetworkFeePercentage([200, 100, 50]))
+                .to.emit(yfUSDTContract, "SetNetworkFeePercentage")
+                .withArgs([100, 75, 50], [200, 100, 50]) // [oldNetworkFeePercentage, newNetworkFeePercentage]
+            // Check if network fee percentage is set correctly
+            expect(await yfUSDTContract.networkFeePercentage(0)).to.equal(200)
+            expect(await yfUSDTContract.networkFeePercentage(1)).to.equal(100)
+            expect(await yfUSDTContract.networkFeePercentage(2)).to.equal(50)
         })
 
-        it("should able to set new custom deposit fee percentage correctly in Yearn Farmer contract", async () => {
+        it("should able to set new custom network fee percentage correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements (100 = 1%)
-            await expect(yfUSDTContract.setCustomDepositFeePercentage(60))
-                .to.be.revertedWith("Custom deposit fee percentage cannot be more than tier 2")
-            // Set deposit fee percentage to 0.1% (default 0.25%)
+            await expect(yfUSDTContract.setCustomNetworkFeePercentage(60))
+                .to.be.revertedWith("Custom network fee percentage cannot be more than tier 2")
+            // Set network fee percentage to 0.1% (default 0.25%)
             // And check if function is log
-            await expect(yfUSDTContract.setCustomDepositFeePercentage(10))
-                .to.emit(yfUSDTContract, "SetCustomDepositFeePercentage")
-                .withArgs(25, 10) // [oldCustomDepositFeePercentage, newCustomDepositFeePercentage]
-            // Check if deposit fee percentage is set correctly
-            expect(await yfUSDTContract.customDepositFeePercentage()).to.equal(10)
+            await expect(yfUSDTContract.setCustomNetworkFeePercentage(10))
+                .to.emit(yfUSDTContract, "SetCustomNetworkFeePercentage")
+                .withArgs(25, 10) // [oldCustomNetworkFeePercentage, newCustomNetworkFeePercentage]
+            // Check if network fee percentage is set correctly
+            expect(await yfUSDTContract.customNetworkFeePercentage()).to.equal(10)
         })
 
         it("should able to set new profile sharing fee percentage correctly in Yearn Farmer contract", async () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Check if function parameter meet the requirements
             await expect(yfUSDTContract.setProfileSharingFeePercentage(4000))
@@ -829,9 +831,9 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Deposit into Yearn Farmer through daoVaultUSDT
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, deployerSigner)
@@ -861,9 +863,9 @@ describe("yfUSDTv2", () => {
             // Get address of deployer and deploy the contracts
             const [deployerSigner, _] = await ethers.getSigners()
             const YfUSDTContract = await ethers.getContractFactory("yfUSDTv2", deployerSigner)
-            const yfUSDTContract = await YfUSDTContract.deploy(tokenAddress, yEarnAddress, yVaultAddress, treasuryWalletAddress, communityWalletAddress)
+            const yfUSDTContract = await YfUSDTContract.deploy()
             const DaoVaultUSDT = await ethers.getContractFactory("DAOVaultMediumUSDT", deployerSigner)
-            const daoVaultUSDT = await DaoVaultUSDT.deploy(tokenAddress, yfUSDTContract.address)
+            const daoVaultUSDT = await DaoVaultUSDT.deploy(yfUSDTContract.address)
             await yfUSDTContract.setVault(daoVaultUSDT.address)
             // Deposit into Yearn Farmer through daoVaultUSDT
             const token = new ethers.Contract(tokenAddress, IERC20_ABI, deployerSigner)
