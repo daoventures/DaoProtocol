@@ -36,7 +36,7 @@ contract DAOVaultMediumUSDT is ERC20, Ownable {
     using Address for address;
     using SafeMath for uint256;
 
-    IERC20 public token = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7);
+    IERC20 public token;
     IStrategy public strategy;
     address public pendingStrategy;
 
@@ -46,8 +46,10 @@ contract DAOVaultMediumUSDT is ERC20, Ownable {
 
     event MigrateFunds(address indexed fromStrategy, address indexed toStrategy, uint256 amount);
 
-    constructor(address _strategy) ERC20("DAO Vault Medium USDT", "dvmUSDT") {
+    constructor(address _token, address _strategy) ERC20("DAO Vault Medium USDT", "dvmUSDT") {
         _setupDecimals(6);
+
+        token = IERC20(_token);
         strategy = IStrategy(_strategy);
     }
 
