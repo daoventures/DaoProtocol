@@ -13,7 +13,7 @@ import "../interfaces/IDaoVault.sol";
 
 /// @title Contract for yield token in Yearn Finance contracts
 /// @dev This contract should not be reused after vesting state
-contract yfUSDCv2 is ERC20, Ownable {
+contract YearnFarmerTUSDv2 is ERC20, Ownable {
   /**
    * @dev Inherit from Ownable contract enable contract ownership transferable
    * Function: transferOwnership(newOwnerAddress)
@@ -24,9 +24,9 @@ contract yfUSDCv2 is ERC20, Ownable {
   using Address for address;
   using SafeMath for uint256;
 
-  IERC20 public token = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-  IYearn public earn = IYearn(0x26EA744E5B887E5205727f55dFBE8685e3b21951);
-  IYvault public vault = IYvault(0x597aD1e0c13Bfe8025993D9e79C69E1c0233522e);
+  IERC20 public token;
+  IYearn public earn;
+  IYvault public vault;
   uint256 private constant MAX_UNIT = 2**256 - 2;
   mapping (address => uint256) private earnDepositBalance;
   mapping (address => uint256) private vaultDepositBalance;
@@ -57,8 +57,14 @@ contract yfUSDCv2 is ERC20, Ownable {
   event SetCustomNetworkFeePercentage(uint256 oldCustomNetworkFeePercentage, uint256 newCustomNetworkFeePercentage);
   event SetProfileSharingFeePercentage(uint256 indexed oldProfileSharingFeePercentage, uint256 indexed newProfileSharingFeePercentage);
 
-  constructor() ERC20("Yearn Farmer v2 USDC", "yfUSDCv2") {
-      _setupDecimals(6);
+  constructor(address _token, address _earn, address _vault)
+    ERC20("Yearn Farmer v2 TUSD", "yfTUSDv2") {
+      _setupDecimals(18);
+      
+      token = IERC20(_token);
+      earn = IYearn(_earn);
+      vault = IYvault(_vault);
+
       _approvePooling();
   }
 
@@ -84,8 +90,9 @@ contract yfUSDCv2 is ERC20, Ownable {
    * - Only owner of this contract can call this function
    */
   function setTreasuryWallet(address _treasuryWallet) external onlyOwner {
-    emit SetTreasuryWallet(treasuryWallet, _treasuryWallet);
+    address oldTreasuryWallet = treasuryWallet;
     treasuryWallet = _treasuryWallet;
+    emit SetTreasuryWallet(oldTreasuryWallet, _treasuryWallet);
   }
 
   /**
@@ -95,8 +102,9 @@ contract yfUSDCv2 is ERC20, Ownable {
    * - Only owner of this contract can call this function
    */
   function setCommunityWallet(address _communityWallet) external onlyOwner {
-    emit SetCommunityWallet(communityWallet, _communityWallet);
+    address oldCommunityWallet = communityWallet;
     communityWallet = _communityWallet;
+    emit SetCommunityWallet(oldCommunityWallet, _communityWallet);
   }
 
   /**
@@ -117,8 +125,9 @@ contract yfUSDCv2 is ERC20, Ownable {
      * Tier 2: minimun amount of tier 2 <= deposit amount <= maximun amount of tier 2
      * Tier 3: amount > maximun amount of tier 2
      */
-    emit SetNetworkFeeTier2(networkFeeTier2, _networkFeeTier2);
+    uint256[] memory oldNetworkFeeTier2 = networkFeeTier2;
     networkFeeTier2 = _networkFeeTier2;
+    emit SetNetworkFeeTier2(oldNetworkFeeTier2, _networkFeeTier2);
   }
 
   /**
@@ -139,8 +148,10 @@ contract yfUSDCv2 is ERC20, Ownable {
       _networkFeePercentage[1] < 4000 &&
       _networkFeePercentage[2] < 4000, "Network fee percentage cannot be more than 40%"
     );
-    emit SetNetworkFeePercentage(networkFeePercentage, _networkFeePercentage);
+
+    uint256[] memory oldNetworkFeePercentage = networkFeePercentage;
     networkFeePercentage = _networkFeePercentage;
+    emit SetNetworkFeePercentage(oldNetworkFeePercentage, _networkFeePercentage);
   }
 
   /**
@@ -153,8 +164,10 @@ contract yfUSDCv2 is ERC20, Ownable {
    */
   function setCustomNetworkFeeTier(uint256 _customNetworkFeeTier) external onlyOwner {
     require(_customNetworkFeeTier > networkFeeTier2[1], "Custom network fee tier must greater than tier 2");
-    emit SetCustomNetworkFeeTier(customNetworkFeeTier, _customNetworkFeeTier);
+
+    uint256 oldCustomNetworkFeeTier = customNetworkFeeTier;
     customNetworkFeeTier = _customNetworkFeeTier;
+    emit SetCustomNetworkFeeTier(oldCustomNetworkFeeTier, _customNetworkFeeTier);
   }
 
   /**
@@ -166,8 +179,10 @@ contract yfUSDCv2 is ERC20, Ownable {
    */
   function setCustomNetworkFeePercentage(uint256 _percentage) public onlyOwner {
     require(_percentage < networkFeePercentage[2], "Custom network fee percentage cannot be more than tier 2");
-    emit SetCustomNetworkFeePercentage(customNetworkFeePercentage, _percentage);
+
+    uint256 oldCustomNetworkFeePercentage = customNetworkFeePercentage;
     customNetworkFeePercentage = _percentage;
+    emit SetCustomNetworkFeePercentage(oldCustomNetworkFeePercentage, _percentage);
   }
 
   /**
@@ -179,8 +194,10 @@ contract yfUSDCv2 is ERC20, Ownable {
    */
   function setProfileSharingFeePercentage(uint256 _percentage) public onlyOwner {
     require(_percentage < 4000, "Profile sharing fee percentage cannot be more than 40%");
-    emit SetProfileSharingFeePercentage(profileSharingFeePercentage, _percentage);
+
+    uint256 oldProfileSharingFeePercentage = profileSharingFeePercentage;
     profileSharingFeePercentage = _percentage;
+    emit SetProfileSharingFeePercentage(oldProfileSharingFeePercentage, _percentage);
   }
 
   /**
